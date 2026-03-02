@@ -98,7 +98,7 @@ Interrupt Scheduler::execute(Job *job, MMU &mmu)
                     }
 
                     int AddrPC = processImage->getSysReg()->getState(PC);
-                    interrupt = cpu.exeInstr(AddrPC, sysreg[job[i].getId()]);
+                    interrupt = cpu.exeInstr(AddrPC, *processImage->getSysReg());
 
                     processImage->setTexec(processImage->getTexec() + 1);
 

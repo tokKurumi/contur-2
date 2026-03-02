@@ -54,12 +54,12 @@ ProcessImage::ProcessImage() : status(true), memory(nullptr), flag(1)
 
 ProcessImage::~ProcessImage()
 {
-    std::cout << " object Processimage deleted" << '\n';
+    std::cout << " object ProcessImage deleted" << '\n';
 }
 
 void ProcessImage::Debug()
 {
-    std::cout << "-- begin Debug ProcessImage deleted" << '\n';
+    std::cout << "-- begin Debug ProcessImage" << '\n';
     std::cout << "ID:\t" << getID() << '\n';
     std::cout << "addr:\t" << getAddr() << '\n';
     std::cout << "VirtualAddr:\t" << getVirtualAddr() << '\n';
