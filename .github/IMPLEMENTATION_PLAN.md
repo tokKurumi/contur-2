@@ -155,9 +155,9 @@
 
 | # | Task | Header | Source | Test | Done |
 |---|---|---|---|---|---|
-| 5.1 | `i_execution_engine.h` — `IExecutionEngine` interface (execute, halt, name) | `execution/i_execution_engine.h` | — | — | |
-| 5.2 | `execution_context.h` — `ExecutionContext` / `ExecutionResult` structs | `execution/execution_context.h` | — | — | |
-| 5.3 | `interpreter_engine.h` — `InterpreterEngine` (PIMPL; wraps CPU; executes block-by-block up to tickBudget) | `execution/interpreter_engine.h` | `execution/interpreter_engine.cpp` | `test_interpreter_engine.cpp` | |
+| 5.1 | `i_execution_engine.h` — `IExecutionEngine` interface (execute, halt, name) | `execution/i_execution_engine.h` | — | — | ✅ |
+| 5.2 | `execution_context.h` — `ExecutionContext` / `ExecutionResult` structs | `execution/execution_context.h` | — | — | ✅ |
+| 5.3 | `interpreter_engine.h` — `InterpreterEngine` (PIMPL; wraps CPU; executes block-by-block up to tickBudget) | `execution/interpreter_engine.h` | `execution/interpreter_engine.cpp` | `test_interpreter_engine.cpp` | ✅ |
 
 ### Acceptance Criteria
 - Load a simple program (Mov, Add, Int Exit) into PhysicalMemory
@@ -461,7 +461,7 @@
 
 ---
 
-## Test Statistics (Phases 0–4)
+## Test Statistics (Phases 0–5)
 
 | Phase | Test File | Test Suites | Tests |
 |---|---|---|---|
@@ -481,7 +481,8 @@
 | 4 | `test_alu.cpp` | ALUTest | 32 |
 | 4 | `test_cpu.cpp` | CpuTest | 34 |
 | 4 | `test_device_manager.cpp` | DeviceManagerTest, NetworkDeviceTest, ConsoleDeviceTest | 28 |
-| | | **25 suites** | **311** |
+| 5 | `test_interpreter_engine.cpp` | InterpreterEngineTest | 26 |
+| | | **26 suites** | **337** |
 
 ---
 
@@ -493,7 +494,7 @@ Phase 1:  Foundation (core+arch)   ████████             ✅  (9 
 Phase 2:  Memory                   ████████████         ✅  (8 tasks,  75 tests)
 Phase 3:  Process                  ████████             ✅  (5 tasks,  99 tests)
 Phase 4:  CPU + I/O                ████████████         ✅  (7 tasks,  94 tests)
-Phase 5:  Interpreter              ████████
+Phase 5:  Interpreter              ████████             ✅  (3 tasks,  26 tests)
 Phase 6:  Scheduling               ████████████████
 Phase 7:  Dispatch + Sync          ████████████████
 Phase 8:  IPC + Syscalls           ████████████
@@ -506,7 +507,7 @@ Phase 14: Native Engine            ████████
 Phase 15: Tests                    ████████████
 Phase 16: Docs + CI                ████████
 
-Total: 311 unit tests passing (Phases 0–4)
+Total: 337 unit tests passing (Phases 0–5)
 ```
 
 > Phases 2 and 3 can be developed in parallel (no dependency on each other).
