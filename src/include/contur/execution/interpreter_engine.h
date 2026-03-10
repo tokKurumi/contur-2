@@ -34,7 +34,7 @@ namespace contur {
     /// @endcode
     class InterpreterEngine final : public IExecutionEngine
     {
-      public:
+        public:
         /// @brief Constructs an InterpreterEngine.
         /// @param cpu    Reference to the CPU (must outlive the engine).
         /// @param memory Reference to the memory subsystem (must outlive the engine).
@@ -57,7 +57,7 @@ namespace contur {
         /// @copydoc IExecutionEngine::name
         [[nodiscard]] std::string_view name() const noexcept override;
 
-      private:
+        private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };

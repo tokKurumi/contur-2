@@ -20,7 +20,7 @@ namespace contur {
     /// read/write operations on RegisterValue-sized data units.
     class IDevice
     {
-      public:
+        public:
         virtual ~IDevice() = default;
 
         /// @brief Returns the unique device identifier.
@@ -41,7 +41,7 @@ namespace contur {
         /// @brief Returns true if the device is ready for I/O operations.
         [[nodiscard]] virtual bool isReady() const noexcept = 0;
 
-      protected:
+        protected:
         IDevice() = default;
         IDevice(const IDevice &) = default;
         IDevice &operator=(const IDevice &) = default;

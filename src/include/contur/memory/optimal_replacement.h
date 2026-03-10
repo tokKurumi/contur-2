@@ -18,7 +18,7 @@ namespace contur {
     /// for comparing other algorithms' performance.
     class OptimalReplacement final : public IPageReplacementPolicy
     {
-      public:
+        public:
         /// @brief Constructs with a known future access sequence.
         /// @param futureAccesses Ordered list of FrameIds that will be accessed.
         explicit OptimalReplacement(std::vector<FrameId> futureAccesses);
@@ -35,7 +35,7 @@ namespace contur {
         void onLoad(FrameId frame) override;
         void reset() override;
 
-      private:
+        private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };

@@ -24,7 +24,7 @@ namespace contur {
     /// Implemented by ProcessImage (or any adapter wrapping a PCB).
     class IProcess
     {
-      public:
+        public:
         virtual ~IProcess() = default;
 
         /// @brief Returns the unique process ID.
@@ -42,7 +42,7 @@ namespace contur {
         /// @brief Returns the process timing statistics.
         [[nodiscard]] virtual const ProcessTiming &timing() const noexcept = 0;
 
-      protected:
+        protected:
         IProcess() = default;
 
         // Non-copyable, non-movable (interface)

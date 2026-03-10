@@ -20,7 +20,7 @@ using namespace contur;
 /// Sets up a 256-cell physical memory, a CPU, and an InterpreterEngine.
 class InterpreterEngineTest : public ::testing::Test
 {
-  protected:
+    protected:
     PhysicalMemory memory{256};
     Cpu cpu{memory};
     InterpreterEngine engine{cpu, memory};

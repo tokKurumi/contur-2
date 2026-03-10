@@ -24,7 +24,7 @@ namespace contur {
     /// operations, while the MMU handles per-address translation.
     class IVirtualMemory
     {
-      public:
+        public:
         virtual ~IVirtualMemory() = default;
 
         /// @brief Allocates a virtual memory slot for a process.

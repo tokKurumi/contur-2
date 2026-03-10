@@ -19,7 +19,7 @@ namespace contur {
     /// address range (slot) for its code and data.
     class VirtualMemory final : public IVirtualMemory
     {
-      public:
+        public:
         /// @brief Constructs virtual memory backed by the given MMU.
         /// @param mmu The MMU to use for address translation (non-owning reference).
         /// @param maxSlots Maximum number of concurrent process slots.
@@ -42,7 +42,7 @@ namespace contur {
         [[nodiscard]] bool hasSlot(ProcessId processId) const noexcept override;
         [[nodiscard]] std::size_t slotSize(ProcessId processId) const noexcept override;
 
-      private:
+        private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };

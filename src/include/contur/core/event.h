@@ -32,7 +32,7 @@ namespace contur {
     /// @endcode
     template <typename... Args> class Event
     {
-      public:
+        public:
         /// @brief The callback signature for subscribers.
         using Callback = std::function<void(Args...)>;
 
@@ -95,7 +95,7 @@ namespace contur {
             subscribers_.clear();
         }
 
-      private:
+        private:
         struct Subscriber
         {
             SubscriptionId id;

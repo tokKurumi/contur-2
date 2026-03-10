@@ -9,7 +9,7 @@ using namespace contur;
 
 class ALUTest : public ::testing::Test
 {
-  protected:
+    protected:
     ALU alu;
 };
 

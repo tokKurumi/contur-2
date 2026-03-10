@@ -19,7 +19,7 @@ namespace contur {
     /// Each call to `step()` performs one fetch-decode-execute cycle.
     class ICPU
     {
-      public:
+        public:
         virtual ~ICPU() = default;
 
         /// @brief Performs a single fetch-decode-execute cycle.
@@ -41,7 +41,7 @@ namespace contur {
         /// @brief Resets the CPU's internal state (flags, etc.).
         virtual void reset() noexcept = 0;
 
-      protected:
+        protected:
         ICPU() = default;
         ICPU(const ICPU &) = default;
         ICPU &operator=(const ICPU &) = default;

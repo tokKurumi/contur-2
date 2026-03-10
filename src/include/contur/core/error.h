@@ -102,7 +102,7 @@ namespace contur {
     /// @tparam T The success value type.
     template <typename T> class [[nodiscard]] Result
     {
-      public:
+        public:
         /// @brief Constructs a successful Result containing the given value.
         [[nodiscard]] static Result ok(T value)
         {
@@ -170,7 +170,7 @@ namespace contur {
             return defaultValue;
         }
 
-      private:
+        private:
         explicit Result(T value)
             : storage_(std::move(value))
         {}
@@ -184,7 +184,7 @@ namespace contur {
     /// @brief Specialization of Result for void — operations that produce no value on success.
     template <> class [[nodiscard]] Result<void>
     {
-      public:
+        public:
         /// @brief Constructs a successful void Result.
         [[nodiscard]] static Result ok()
         {
@@ -216,7 +216,7 @@ namespace contur {
             return code_;
         }
 
-      private:
+        private:
         explicit Result(ErrorCode code)
             : code_(code)
         {}

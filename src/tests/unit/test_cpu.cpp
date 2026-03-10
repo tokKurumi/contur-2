@@ -16,7 +16,7 @@ using namespace contur;
 /// @brief Test fixture that sets up a CPU connected to 256-cell physical memory.
 class CpuTest : public ::testing::Test
 {
-  protected:
+    protected:
     PhysicalMemory memory{256};
     Cpu cpu{memory};
     RegisterFile regs;

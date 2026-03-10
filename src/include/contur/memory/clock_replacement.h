@@ -16,7 +16,7 @@ namespace contur {
     /// - If reference bit is clear, select this frame as victim
     class ClockReplacement final : public IPageReplacementPolicy
     {
-      public:
+        public:
         ClockReplacement();
         ~ClockReplacement() override;
 
@@ -31,7 +31,7 @@ namespace contur {
         void onLoad(FrameId frame) override;
         void reset() override;
 
-      private:
+        private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };

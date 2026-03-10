@@ -23,7 +23,7 @@ namespace contur {
     /// provides lookup by DeviceId for read/write dispatch.
     class DeviceManager
     {
-      public:
+        public:
         DeviceManager();
         ~DeviceManager();
 
@@ -62,7 +62,7 @@ namespace contur {
         /// @brief Returns true if a device with the given ID is registered.
         [[nodiscard]] bool hasDevice(DeviceId id) const noexcept;
 
-      private:
+        private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };

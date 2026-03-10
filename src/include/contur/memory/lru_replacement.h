@@ -15,7 +15,7 @@ namespace contur {
     /// that has not been accessed for the longest time.
     class LruReplacement final : public IPageReplacementPolicy
     {
-      public:
+        public:
         LruReplacement();
         ~LruReplacement() override;
 
@@ -30,7 +30,7 @@ namespace contur {
         void onLoad(FrameId frame) override;
         void reset() override;
 
-      private:
+        private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };

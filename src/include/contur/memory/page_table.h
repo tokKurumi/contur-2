@@ -25,7 +25,7 @@ namespace contur {
     /// virtual addresses and to decide which pages to swap in/out.
     class PageTable
     {
-      public:
+        public:
         /// @brief Constructs a page table with the given number of virtual pages.
         explicit PageTable(std::size_t pageCount);
         ~PageTable();
@@ -69,7 +69,7 @@ namespace contur {
         /// @brief Resets all entries to unmapped state.
         void clear();
 
-      private:
+        private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };

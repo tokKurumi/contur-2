@@ -53,7 +53,7 @@ namespace contur {
     /// dispatcher, and MMU need to manage the process.
     class PCB
     {
-      public:
+        public:
         /// @brief Constructs a PCB with the given ID, name, and optional priority.
         /// @param id        Unique process identifier (must not be INVALID_PID).
         /// @param name      Human-readable process name.
@@ -129,7 +129,7 @@ namespace contur {
         /// @brief Returns a mutable reference to the address mapping info.
         [[nodiscard]] ProcessAddressInfo &addressInfo() noexcept;
 
-      private:
+        private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };

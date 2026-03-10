@@ -20,7 +20,7 @@ namespace contur {
     /// memory support for process isolation.
     class IMMU
     {
-      public:
+        public:
         virtual ~IMMU() = default;
 
         /// @brief Reads a Block from a virtual address in a given process's address space.

@@ -13,7 +13,7 @@ using namespace contur;
 
 class TestDevice final : public IDevice
 {
-  public:
+    public:
     explicit TestDevice(DeviceId deviceId, bool ready = true)
         : deviceId_(deviceId)
         , ready_(ready)
@@ -58,7 +58,7 @@ class TestDevice final : public IDevice
         ready_ = ready;
     }
 
-  private:
+    private:
     DeviceId deviceId_;
     bool ready_;
     RegisterValue lastWritten_ = 0;

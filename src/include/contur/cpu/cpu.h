@@ -28,7 +28,7 @@ namespace contur {
     /// - `state`  — addressing mode: 0 = immediate, 1 = register-register
     class Cpu final : public ICPU
     {
-      public:
+        public:
         /// @brief Constructs a CPU connected to the given memory.
         /// @param memory Reference to the memory subsystem (must outlive the CPU).
         explicit Cpu(IMemory &memory);
@@ -54,7 +54,7 @@ namespace contur {
         /// - Bit 1 (SIGN_FLAG): set if first operand was less than second
         [[nodiscard]] RegisterValue flags() const noexcept;
 
-      private:
+        private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };

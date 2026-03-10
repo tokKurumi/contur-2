@@ -12,7 +12,7 @@ using namespace contur;
 
 class VirtualMemoryTest : public ::testing::Test
 {
-  protected:
+    protected:
     static constexpr std::size_t MEM_SIZE = 32;
     static constexpr std::size_t MAX_SLOTS = 8;
 

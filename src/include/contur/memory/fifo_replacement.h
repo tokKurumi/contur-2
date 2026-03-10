@@ -15,7 +15,7 @@ namespace contur {
     /// On eviction, selects the frame that was loaded earliest.
     class FifoReplacement final : public IPageReplacementPolicy
     {
-      public:
+        public:
         FifoReplacement();
         ~FifoReplacement() override;
 
@@ -30,7 +30,7 @@ namespace contur {
         void onLoad(FrameId frame) override;
         void reset() override;
 
-      private:
+        private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };

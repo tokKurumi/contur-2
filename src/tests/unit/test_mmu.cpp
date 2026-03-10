@@ -11,7 +11,7 @@ using namespace contur;
 
 class MmuTest : public ::testing::Test
 {
-  protected:
+    protected:
     static constexpr std::size_t MEM_SIZE = 16;
 
     PhysicalMemory memory{MEM_SIZE};

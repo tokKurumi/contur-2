@@ -18,7 +18,7 @@ namespace contur {
     /// Reads return the last written value (echo mode).
     class ConsoleDevice final : public IDevice
     {
-      public:
+        public:
         /// @brief Default console device ID.
         static constexpr DeviceId CONSOLE_DEVICE_ID = 1;
 
@@ -37,7 +37,7 @@ namespace contur {
         [[nodiscard]] Result<void> write(RegisterValue value) override;
         [[nodiscard]] bool isReady() const noexcept override;
 
-      private:
+        private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };

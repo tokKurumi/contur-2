@@ -19,7 +19,7 @@ namespace contur {
     /// they take operands and return results without side effects.
     class ALU
     {
-      public:
+        public:
         ALU() = default;
         ~ALU() = default;
 

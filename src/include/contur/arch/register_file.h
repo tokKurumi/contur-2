@@ -48,7 +48,7 @@ namespace contur {
     /// (for context switching), and formatted debug output.
     class RegisterFile
     {
-      public:
+        public:
         RegisterFile();
         ~RegisterFile();
 
@@ -102,7 +102,7 @@ namespace contur {
         /// @brief Stream output operator for debug printing.
         friend std::ostream &operator<<(std::ostream &os, const RegisterFile &rf);
 
-      private:
+        private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };

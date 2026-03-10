@@ -34,7 +34,7 @@ namespace contur {
     /// Ownership: ProcessImage owns all three components.
     class ProcessImage
     {
-      public:
+        public:
         /// @brief Constructs a ProcessImage with the given parameters.
         /// @param id        Unique process identifier.
         /// @param name      Human-readable process name.
@@ -105,7 +105,7 @@ namespace contur {
         /// @brief Returns the process priority.
         [[nodiscard]] const Priority &priority() const noexcept;
 
-      private:
+        private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };

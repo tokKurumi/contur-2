@@ -19,7 +19,7 @@ namespace contur {
     /// deterministic testing with mock clocks.
     class IClock
     {
-      public:
+        public:
         virtual ~IClock() = default;
 
         /// @brief Returns the current simulation tick.
@@ -35,7 +35,7 @@ namespace contur {
     /// @brief Concrete simulation clock — a simple monotonic tick counter.
     class SimulationClock final : public IClock
     {
-      public:
+        public:
         SimulationClock();
         ~SimulationClock() override;
 
@@ -51,7 +51,7 @@ namespace contur {
         void tick() override;
         void reset() override;
 
-      private:
+        private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };

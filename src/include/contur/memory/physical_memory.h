@@ -16,7 +16,7 @@ namespace contur {
     /// loading/saving code segments (swap in/out).
     class PhysicalMemory final : public IMemory
     {
-      public:
+        public:
         /// @brief Constructs physical memory with the given number of cells.
         /// @param cellCount Total addressable cells (each holds one Block).
         explicit PhysicalMemory(std::size_t cellCount);
@@ -52,7 +52,7 @@ namespace contur {
         /// @return Success or an error if any address is out of range.
         [[nodiscard]] Result<void> clearRange(MemoryAddress startAddress, std::size_t count);
 
-      private:
+        private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };

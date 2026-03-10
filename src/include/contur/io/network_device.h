@@ -18,7 +18,7 @@ namespace contur {
     /// Reads dequeue from a receive buffer (loopback / echo mode for simulation).
     class NetworkDevice final : public IDevice
     {
-      public:
+        public:
         /// @brief Default network device ID.
         static constexpr DeviceId NETWORK_DEVICE_ID = 2;
 
@@ -45,7 +45,7 @@ namespace contur {
         /// @brief Returns true if the buffer has unread data.
         [[nodiscard]] bool hasData() const noexcept;
 
-      private:
+        private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };

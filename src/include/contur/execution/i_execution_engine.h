@@ -32,7 +32,7 @@ namespace contur {
     ///   on POSIX, `CreateProcess` on Windows)
     class IExecutionEngine
     {
-      public:
+        public:
         virtual ~IExecutionEngine() = default;
 
         /// @brief Executes the given process for up to @p tickBudget ticks.
@@ -55,7 +55,7 @@ namespace contur {
         /// @return "Interpreter" or "Native", etc.
         [[nodiscard]] virtual std::string_view name() const noexcept = 0;
 
-      protected:
+        protected:
         IExecutionEngine() = default;
         IExecutionEngine(const IExecutionEngine &) = default;
         IExecutionEngine &operator=(const IExecutionEngine &) = default;

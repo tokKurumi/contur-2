@@ -17,7 +17,7 @@ namespace contur {
     /// future wrappers (cached memory, protected memory, etc.).
     class IMemory
     {
-      public:
+        public:
         virtual ~IMemory() = default;
 
         /// @brief Reads a Block from the given address.

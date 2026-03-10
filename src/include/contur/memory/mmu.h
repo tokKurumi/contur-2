@@ -23,7 +23,7 @@ namespace contur {
     /// and maintains a simulated swap space for pages evicted from RAM.
     class Mmu final : public IMMU
     {
-      public:
+        public:
         /// @brief Constructs an MMU backed by the given physical memory.
         /// @param memory The physical memory to manage (non-owning reference).
         /// @param replacementPolicy The page replacement policy to use.
@@ -47,7 +47,7 @@ namespace contur {
         [[nodiscard]] std::size_t totalFrames() const noexcept override;
         [[nodiscard]] std::size_t freeFrames() const noexcept override;
 
-      private:
+        private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };

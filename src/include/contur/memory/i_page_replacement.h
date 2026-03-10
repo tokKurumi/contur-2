@@ -18,7 +18,7 @@ namespace contur {
     /// Implementations: FIFO, LRU, Clock, Optimal.
     class IPageReplacementPolicy
     {
-      public:
+        public:
         virtual ~IPageReplacementPolicy() = default;
 
         /// @brief Returns the name of the algorithm (e.g., "FIFO", "LRU").
