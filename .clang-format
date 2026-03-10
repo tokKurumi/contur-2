@@ -22,13 +22,13 @@ BraceWrapping:
   BeforeElse: true
   BeforeLambdaBody: false
   BeforeWhile: false
-  AfterControlStatement: false
+  AfterControlStatement: Always
   IndentBraces: false
   SplitEmptyFunction: false
   SplitEmptyRecord: false
   SplitEmptyNamespace: false
 
-NamespaceIndentation: None
+NamespaceIndentation: All
 CompactNamespaces: false
 
 # Includes
