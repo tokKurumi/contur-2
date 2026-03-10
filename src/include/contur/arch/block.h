@@ -8,9 +8,9 @@
 
 #pragma once
 
-#include "contur/arch/instruction.h"
-
 #include <cstdint>
+
+#include "contur/arch/instruction.h"
 
 namespace contur {
 
@@ -22,31 +22,32 @@ namespace contur {
     ///
     /// This is a lightweight value type (Flyweight pattern) — designed to be
     /// stored in large arrays efficiently.
-    struct Block {
-        Instruction code = Instruction::Nop;   ///< Instruction opcode
-        std::uint8_t reg = 0;                  ///< Target/source register index
-        std::int32_t operand = 0;              ///< Immediate value or address
-        std::int32_t state = 0;                ///< Auxiliary state / flags
+    struct Block
+    {
+        Instruction code = Instruction::Nop; ///< Instruction opcode
+        std::uint8_t reg = 0;                ///< Target/source register index
+        std::int32_t operand = 0;            ///< Immediate value or address
+        std::int32_t state = 0;              ///< Auxiliary state / flags
 
         /// @brief Default-constructs a Nop block.
         constexpr Block() noexcept = default;
 
         /// @brief Constructs a block with all fields specified.
-        constexpr Block(Instruction code, std::uint8_t reg, std::int32_t operand,
-                        std::int32_t state = 0) noexcept
-            : code(code), reg(reg), operand(operand), state(state)
-        {
-        }
+        constexpr Block(Instruction code, std::uint8_t reg, std::int32_t operand, std::int32_t state = 0) noexcept
+            : code(code)
+            , reg(reg)
+            , operand(operand)
+            , state(state)
+        {}
 
         /// @brief Equality comparison.
-        [[nodiscard]] constexpr bool operator==(const Block& other) const noexcept
+        [[nodiscard]] constexpr bool operator==(const Block &other) const noexcept
         {
-            return code == other.code && reg == other.reg && operand == other.operand &&
-                state == other.state;
+            return code == other.code && reg == other.reg && operand == other.operand && state == other.state;
         }
 
         /// @brief Inequality comparison.
-        [[nodiscard]] constexpr bool operator!=(const Block& other) const noexcept
+        [[nodiscard]] constexpr bool operator!=(const Block &other) const noexcept
         {
             return !(*this == other);
         }

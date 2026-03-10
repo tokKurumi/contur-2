@@ -1,9 +1,9 @@
 /// @file test_page_table.cpp
 /// @brief Unit tests for PageTable.
 
-#include "contur/memory/page_table.h"
-
 #include <gtest/gtest.h>
+
+#include "contur/memory/page_table.h"
 
 using namespace contur;
 
@@ -144,7 +144,8 @@ TEST(PageTableTest, Clear)
     pt.clear();
     EXPECT_EQ(pt.presentCount(), 0u);
 
-    for (std::size_t i = 0; i < 4; ++i) {
+    for (std::size_t i = 0; i < 4; ++i)
+    {
         auto entry = pt.getEntry(i);
         ASSERT_TRUE(entry.isOk());
         EXPECT_FALSE(entry.value().present);

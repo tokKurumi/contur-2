@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include "contur/memory/i_page_replacement.h"
-
 #include <memory>
+
+#include "contur/memory/i_page_replacement.h"
 
 namespace contur {
 
@@ -15,22 +15,22 @@ namespace contur {
     /// On eviction, selects the frame that was loaded earliest.
     class FifoReplacement final : public IPageReplacementPolicy
     {
-    public:
+      public:
         FifoReplacement();
         ~FifoReplacement() override;
 
-        FifoReplacement(const FifoReplacement&) = delete;
-        FifoReplacement& operator=(const FifoReplacement&) = delete;
-        FifoReplacement(FifoReplacement&&) noexcept;
-        FifoReplacement& operator=(FifoReplacement&&) noexcept;
+        FifoReplacement(const FifoReplacement &) = delete;
+        FifoReplacement &operator=(const FifoReplacement &) = delete;
+        FifoReplacement(FifoReplacement &&) noexcept;
+        FifoReplacement &operator=(FifoReplacement &&) noexcept;
 
         [[nodiscard]] std::string_view name() const noexcept override;
-        [[nodiscard]] FrameId selectVictim(const PageTable& pageTable) override;
+        [[nodiscard]] FrameId selectVictim(const PageTable &pageTable) override;
         void onAccess(FrameId frame) override;
         void onLoad(FrameId frame) override;
         void reset() override;
 
-    private:
+      private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };

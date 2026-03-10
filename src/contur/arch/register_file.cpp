@@ -9,16 +9,19 @@
 
 namespace contur {
 
-    struct RegisterFile::Impl {
+    struct RegisterFile::Impl
+    {
         std::array<RegisterValue, REGISTER_COUNT> registers = {};
     };
 
-    RegisterFile::RegisterFile() : impl_(std::make_unique<Impl>()) {}
+    RegisterFile::RegisterFile()
+        : impl_(std::make_unique<Impl>())
+    {}
 
     RegisterFile::~RegisterFile() = default;
 
-    RegisterFile::RegisterFile(RegisterFile&&) noexcept = default;
-    RegisterFile& RegisterFile::operator=(RegisterFile&&) noexcept = default;
+    RegisterFile::RegisterFile(RegisterFile &&) noexcept = default;
+    RegisterFile &RegisterFile::operator=(RegisterFile &&) noexcept = default;
 
     RegisterValue RegisterFile::get(Register reg) const noexcept
     {
@@ -72,7 +75,7 @@ namespace contur {
         return impl_->registers;
     }
 
-    void RegisterFile::restore(const std::array<RegisterValue, REGISTER_COUNT>& values) noexcept
+    void RegisterFile::restore(const std::array<RegisterValue, REGISTER_COUNT> &values) noexcept
     {
         impl_->registers = values;
     }
@@ -80,21 +83,23 @@ namespace contur {
     std::string RegisterFile::dump() const
     {
         std::ostringstream oss;
-        for (std::uint8_t i = 0; i < REGISTER_COUNT; ++i) {
+        for (std::uint8_t i = 0; i < REGISTER_COUNT; ++i)
+        {
             auto reg = static_cast<Register>(i);
-            oss << std::setw(3) << registerName(reg) << " = " << std::setw(10)
-                << impl_->registers[i];
-            if (i % 4 == 3) {
+            oss << std::setw(3) << registerName(reg) << " = " << std::setw(10) << impl_->registers[i];
+            if (i % 4 == 3)
+            {
                 oss << "\n";
             }
-            else {
+            else
+            {
                 oss << "  |  ";
             }
         }
         return oss.str();
     }
 
-    std::ostream& operator<<(std::ostream& os, const RegisterFile& rf)
+    std::ostream &operator<<(std::ostream &os, const RegisterFile &rf)
     {
         os << rf.dump();
         return os;

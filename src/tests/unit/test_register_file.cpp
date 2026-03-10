@@ -1,16 +1,17 @@
 /// @file test_register_file.cpp
 /// @brief Unit tests for RegisterFile.
 
-#include "contur/arch/register_file.h"
-
 #include <gtest/gtest.h>
+
+#include "contur/arch/register_file.h"
 
 using namespace contur;
 
 TEST(RegisterFileTest, InitialValuesAreZero)
 {
     RegisterFile rf;
-    for (std::uint8_t i = 0; i < REGISTER_COUNT; ++i) {
+    for (std::uint8_t i = 0; i < REGISTER_COUNT; ++i)
+    {
         EXPECT_EQ(rf.get(i), 0) << "Register " << static_cast<int>(i) << " should be 0";
     }
 }
@@ -64,9 +65,9 @@ TEST(RegisterFileTest, Reset)
 
     rf.reset();
 
-    for (std::uint8_t i = 0; i < REGISTER_COUNT; ++i) {
-        EXPECT_EQ(rf.get(i), 0) << "Register " << static_cast<int>(i)
-                                 << " should be 0 after reset";
+    for (std::uint8_t i = 0; i < REGISTER_COUNT; ++i)
+    {
+        EXPECT_EQ(rf.get(i), 0) << "Register " << static_cast<int>(i) << " should be 0 after reset";
     }
 }
 

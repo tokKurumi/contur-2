@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include "contur/memory/i_page_replacement.h"
-
 #include <memory>
+
+#include "contur/memory/i_page_replacement.h"
 
 namespace contur {
 
@@ -15,22 +15,22 @@ namespace contur {
     /// that has not been accessed for the longest time.
     class LruReplacement final : public IPageReplacementPolicy
     {
-    public:
+      public:
         LruReplacement();
         ~LruReplacement() override;
 
-        LruReplacement(const LruReplacement&) = delete;
-        LruReplacement& operator=(const LruReplacement&) = delete;
-        LruReplacement(LruReplacement&&) noexcept;
-        LruReplacement& operator=(LruReplacement&&) noexcept;
+        LruReplacement(const LruReplacement &) = delete;
+        LruReplacement &operator=(const LruReplacement &) = delete;
+        LruReplacement(LruReplacement &&) noexcept;
+        LruReplacement &operator=(LruReplacement &&) noexcept;
 
         [[nodiscard]] std::string_view name() const noexcept override;
-        [[nodiscard]] FrameId selectVictim(const PageTable& pageTable) override;
+        [[nodiscard]] FrameId selectVictim(const PageTable &pageTable) override;
         void onAccess(FrameId frame) override;
         void onLoad(FrameId frame) override;
         void reset() override;
 
-    private:
+      private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };

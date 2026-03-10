@@ -7,13 +7,13 @@
 
 #pragma once
 
-#include "contur/core/types.h"
-
 #include <array>
 #include <cstdint>
 #include <iosfwd>
 #include <memory>
 #include <string>
+
+#include "contur/core/types.h"
 
 namespace contur {
 
@@ -22,7 +22,8 @@ namespace contur {
     /// 14 general-purpose registers (R0–R13) plus two special-purpose:
     /// - ProgramCounter (R14): points to the next instruction to execute
     /// - StackPointer (R15): points to the top of the process stack
-    enum class Register : std::uint8_t {
+    enum class Register : std::uint8_t
+    {
         R0 = 0,
         R1,
         R2,
@@ -47,17 +48,17 @@ namespace contur {
     /// (for context switching), and formatted debug output.
     class RegisterFile
     {
-    public:
+      public:
         RegisterFile();
         ~RegisterFile();
 
         // Non-copyable
-        RegisterFile(const RegisterFile&) = delete;
-        RegisterFile& operator=(const RegisterFile&) = delete;
+        RegisterFile(const RegisterFile &) = delete;
+        RegisterFile &operator=(const RegisterFile &) = delete;
 
         // Movable
-        RegisterFile(RegisterFile&&) noexcept;
-        RegisterFile& operator=(RegisterFile&&) noexcept;
+        RegisterFile(RegisterFile &&) noexcept;
+        RegisterFile &operator=(RegisterFile &&) noexcept;
 
         /// @brief Gets the value of the specified register.
         [[nodiscard]] RegisterValue get(Register reg) const noexcept;
@@ -93,15 +94,15 @@ namespace contur {
         [[nodiscard]] std::array<RegisterValue, REGISTER_COUNT> snapshot() const noexcept;
 
         /// @brief Restores register values from a previously taken snapshot.
-        void restore(const std::array<RegisterValue, REGISTER_COUNT>& values) noexcept;
+        void restore(const std::array<RegisterValue, REGISTER_COUNT> &values) noexcept;
 
         /// @brief Returns a formatted string showing all register values.
         [[nodiscard]] std::string dump() const;
 
         /// @brief Stream output operator for debug printing.
-        friend std::ostream& operator<<(std::ostream& os, const RegisterFile& rf);
+        friend std::ostream &operator<<(std::ostream &os, const RegisterFile &rf);
 
-    private:
+      private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };
@@ -109,23 +110,40 @@ namespace contur {
     /// @brief Returns the human-readable name of a register (e.g., "R0", "PC", "SP").
     [[nodiscard]] constexpr std::string_view registerName(Register reg) noexcept
     {
-        switch (reg) {
-        case Register::R0: return "R0";
-        case Register::R1: return "R1";
-        case Register::R2: return "R2";
-        case Register::R3: return "R3";
-        case Register::R4: return "R4";
-        case Register::R5: return "R5";
-        case Register::R6: return "R6";
-        case Register::R7: return "R7";
-        case Register::R8: return "R8";
-        case Register::R9: return "R9";
-        case Register::R10: return "R10";
-        case Register::R11: return "R11";
-        case Register::R12: return "R12";
-        case Register::R13: return "R13";
-        case Register::ProgramCounter: return "PC";
-        case Register::StackPointer: return "SP";
+        switch (reg)
+        {
+        case Register::R0:
+            return "R0";
+        case Register::R1:
+            return "R1";
+        case Register::R2:
+            return "R2";
+        case Register::R3:
+            return "R3";
+        case Register::R4:
+            return "R4";
+        case Register::R5:
+            return "R5";
+        case Register::R6:
+            return "R6";
+        case Register::R7:
+            return "R7";
+        case Register::R8:
+            return "R8";
+        case Register::R9:
+            return "R9";
+        case Register::R10:
+            return "R10";
+        case Register::R11:
+            return "R11";
+        case Register::R12:
+            return "R12";
+        case Register::R13:
+            return "R13";
+        case Register::ProgramCounter:
+            return "PC";
+        case Register::StackPointer:
+            return "SP";
         }
         return "??";
     }

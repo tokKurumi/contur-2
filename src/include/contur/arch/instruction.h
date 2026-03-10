@@ -12,7 +12,8 @@ namespace contur {
     /// Each instruction is a single byte, decoded by the CPU during the
     /// fetch-decode-execute cycle. The interpreter engine steps through
     /// these one at a time.
-    enum class Instruction : std::uint8_t {
+    enum class Instruction : std::uint8_t
+    {
         Nop = 0,          ///< No operation
         Mov,              ///< Move immediate/register → register
         Add,              ///< Add: dst = dst + src

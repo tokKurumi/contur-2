@@ -8,7 +8,8 @@
 
 namespace contur {
 
-    struct OptimalReplacement::Impl {
+    struct OptimalReplacement::Impl
+    {
         std::vector<FrameId> futureAccesses;
         std::size_t currentIndex = 0;
         std::unordered_set<FrameId> loadedFrames;
@@ -21,17 +22,18 @@ namespace contur {
     }
 
     OptimalReplacement::~OptimalReplacement() = default;
-    OptimalReplacement::OptimalReplacement(OptimalReplacement&&) noexcept = default;
-    OptimalReplacement& OptimalReplacement::operator=(OptimalReplacement&&) noexcept = default;
+    OptimalReplacement::OptimalReplacement(OptimalReplacement &&) noexcept = default;
+    OptimalReplacement &OptimalReplacement::operator=(OptimalReplacement &&) noexcept = default;
 
     std::string_view OptimalReplacement::name() const noexcept
     {
         return "Optimal";
     }
 
-    FrameId OptimalReplacement::selectVictim([[maybe_unused]] const PageTable& pageTable)
+    FrameId OptimalReplacement::selectVictim([[maybe_unused]] const PageTable &pageTable)
     {
-        if (impl_->loadedFrames.empty()) {
+        if (impl_->loadedFrames.empty())
+        {
             return INVALID_FRAME;
         }
 
@@ -39,21 +41,25 @@ namespace contur {
         FrameId victim = INVALID_FRAME;
         std::size_t farthestUse = 0;
 
-        for (FrameId frame : impl_->loadedFrames) {
+        for (FrameId frame : impl_->loadedFrames)
+        {
             // Find next future access for this frame
-            auto it = std::find(impl_->futureAccesses.begin() +
-                                    static_cast<std::ptrdiff_t>(impl_->currentIndex),
-                                impl_->futureAccesses.end(), frame);
+            auto it = std::find(
+                impl_->futureAccesses.begin() + static_cast<std::ptrdiff_t>(impl_->currentIndex),
+                impl_->futureAccesses.end(),
+                frame
+            );
 
-            if (it == impl_->futureAccesses.end()) {
+            if (it == impl_->futureAccesses.end())
+            {
                 // Frame is never accessed again — ideal victim
                 victim = frame;
                 break;
             }
 
-            auto distance =
-                static_cast<std::size_t>(it - impl_->futureAccesses.begin()) - impl_->currentIndex;
-            if (distance > farthestUse || victim == INVALID_FRAME) {
+            auto distance = static_cast<std::size_t>(it - impl_->futureAccesses.begin()) - impl_->currentIndex;
+            if (distance > farthestUse || victim == INVALID_FRAME)
+            {
                 farthestUse = distance;
                 victim = frame;
             }

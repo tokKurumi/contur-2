@@ -3,10 +3,10 @@
 
 #pragma once
 
-#include "contur/memory/i_page_replacement.h"
-
 #include <memory>
 #include <vector>
+
+#include "contur/memory/i_page_replacement.h"
 
 namespace contur {
 
@@ -18,24 +18,24 @@ namespace contur {
     /// for comparing other algorithms' performance.
     class OptimalReplacement final : public IPageReplacementPolicy
     {
-    public:
+      public:
         /// @brief Constructs with a known future access sequence.
         /// @param futureAccesses Ordered list of FrameIds that will be accessed.
         explicit OptimalReplacement(std::vector<FrameId> futureAccesses);
         ~OptimalReplacement() override;
 
-        OptimalReplacement(const OptimalReplacement&) = delete;
-        OptimalReplacement& operator=(const OptimalReplacement&) = delete;
-        OptimalReplacement(OptimalReplacement&&) noexcept;
-        OptimalReplacement& operator=(OptimalReplacement&&) noexcept;
+        OptimalReplacement(const OptimalReplacement &) = delete;
+        OptimalReplacement &operator=(const OptimalReplacement &) = delete;
+        OptimalReplacement(OptimalReplacement &&) noexcept;
+        OptimalReplacement &operator=(OptimalReplacement &&) noexcept;
 
         [[nodiscard]] std::string_view name() const noexcept override;
-        [[nodiscard]] FrameId selectVictim(const PageTable& pageTable) override;
+        [[nodiscard]] FrameId selectVictim(const PageTable &pageTable) override;
         void onAccess(FrameId frame) override;
         void onLoad(FrameId frame) override;
         void reset() override;
 
-    private:
+      private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };

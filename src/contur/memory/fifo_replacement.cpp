@@ -7,24 +7,28 @@
 
 namespace contur {
 
-    struct FifoReplacement::Impl {
+    struct FifoReplacement::Impl
+    {
         std::deque<FrameId> loadOrder;
     };
 
-    FifoReplacement::FifoReplacement() : impl_(std::make_unique<Impl>()) {}
+    FifoReplacement::FifoReplacement()
+        : impl_(std::make_unique<Impl>())
+    {}
 
     FifoReplacement::~FifoReplacement() = default;
-    FifoReplacement::FifoReplacement(FifoReplacement&&) noexcept = default;
-    FifoReplacement& FifoReplacement::operator=(FifoReplacement&&) noexcept = default;
+    FifoReplacement::FifoReplacement(FifoReplacement &&) noexcept = default;
+    FifoReplacement &FifoReplacement::operator=(FifoReplacement &&) noexcept = default;
 
     std::string_view FifoReplacement::name() const noexcept
     {
         return "FIFO";
     }
 
-    FrameId FifoReplacement::selectVictim([[maybe_unused]] const PageTable& pageTable)
+    FrameId FifoReplacement::selectVictim([[maybe_unused]] const PageTable &pageTable)
     {
-        if (impl_->loadOrder.empty()) {
+        if (impl_->loadOrder.empty())
+        {
             return INVALID_FRAME;
         }
         FrameId victim = impl_->loadOrder.front();

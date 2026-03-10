@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include "contur/memory/i_page_replacement.h"
-
 #include <memory>
+
+#include "contur/memory/i_page_replacement.h"
 
 namespace contur {
 
@@ -16,22 +16,22 @@ namespace contur {
     /// - If reference bit is clear, select this frame as victim
     class ClockReplacement final : public IPageReplacementPolicy
     {
-    public:
+      public:
         ClockReplacement();
         ~ClockReplacement() override;
 
-        ClockReplacement(const ClockReplacement&) = delete;
-        ClockReplacement& operator=(const ClockReplacement&) = delete;
-        ClockReplacement(ClockReplacement&&) noexcept;
-        ClockReplacement& operator=(ClockReplacement&&) noexcept;
+        ClockReplacement(const ClockReplacement &) = delete;
+        ClockReplacement &operator=(const ClockReplacement &) = delete;
+        ClockReplacement(ClockReplacement &&) noexcept;
+        ClockReplacement &operator=(ClockReplacement &&) noexcept;
 
         [[nodiscard]] std::string_view name() const noexcept override;
-        [[nodiscard]] FrameId selectVictim(const PageTable& pageTable) override;
+        [[nodiscard]] FrameId selectVictim(const PageTable &pageTable) override;
         void onAccess(FrameId frame) override;
         void onLoad(FrameId frame) override;
         void reset() override;
 
-    private:
+      private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };

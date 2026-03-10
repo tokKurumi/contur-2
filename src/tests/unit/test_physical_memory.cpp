@@ -1,9 +1,9 @@
 /// @file test_physical_memory.cpp
 /// @brief Unit tests for PhysicalMemory.
 
-#include "contur/memory/physical_memory.h"
-
 #include <gtest/gtest.h>
+
+#include "contur/memory/physical_memory.h"
 
 using namespace contur;
 
@@ -62,7 +62,8 @@ TEST(PhysicalMemoryTest, Clear)
     ASSERT_TRUE(mem.write(1, Block{Instruction::Sub, 4, 5, 6}).isOk());
     mem.clear();
 
-    for (MemoryAddress i = 0; i < 4; ++i) {
+    for (MemoryAddress i = 0; i < 4; ++i)
+    {
         auto result = mem.read(i);
         ASSERT_TRUE(result.isOk());
         EXPECT_EQ(result.value().code, Instruction::Nop);
@@ -124,7 +125,8 @@ TEST(PhysicalMemoryTest, ClearRange)
     auto result = mem.clearRange(2, 3);
     ASSERT_TRUE(result.isOk());
 
-    for (MemoryAddress i = 2; i < 5; ++i) {
+    for (MemoryAddress i = 2; i < 5; ++i)
+    {
         auto readResult = mem.read(i);
         ASSERT_TRUE(readResult.isOk());
         EXPECT_EQ(readResult.value().code, Instruction::Nop);

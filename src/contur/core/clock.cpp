@@ -5,16 +5,19 @@
 
 namespace contur {
 
-    struct SimulationClock::Impl {
+    struct SimulationClock::Impl
+    {
         Tick currentTick = 0;
     };
 
-    SimulationClock::SimulationClock() : impl_(std::make_unique<Impl>()) {}
+    SimulationClock::SimulationClock()
+        : impl_(std::make_unique<Impl>())
+    {}
 
     SimulationClock::~SimulationClock() = default;
 
-    SimulationClock::SimulationClock(SimulationClock&&) noexcept = default;
-    SimulationClock& SimulationClock::operator=(SimulationClock&&) noexcept = default;
+    SimulationClock::SimulationClock(SimulationClock &&) noexcept = default;
+    SimulationClock &SimulationClock::operator=(SimulationClock &&) noexcept = default;
 
     Tick SimulationClock::now() const noexcept
     {

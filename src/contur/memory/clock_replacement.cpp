@@ -9,41 +9,48 @@
 
 namespace contur {
 
-    struct ClockReplacement::Impl {
+    struct ClockReplacement::Impl
+    {
         std::vector<FrameId> frames;         // Circular buffer of loaded frames
         std::unordered_set<FrameId> refBits; // Frames with reference bit set
         std::size_t hand = 0;                // Current clock hand position
     };
 
-    ClockReplacement::ClockReplacement() : impl_(std::make_unique<Impl>()) {}
+    ClockReplacement::ClockReplacement()
+        : impl_(std::make_unique<Impl>())
+    {}
 
     ClockReplacement::~ClockReplacement() = default;
-    ClockReplacement::ClockReplacement(ClockReplacement&&) noexcept = default;
-    ClockReplacement& ClockReplacement::operator=(ClockReplacement&&) noexcept = default;
+    ClockReplacement::ClockReplacement(ClockReplacement &&) noexcept = default;
+    ClockReplacement &ClockReplacement::operator=(ClockReplacement &&) noexcept = default;
 
     std::string_view ClockReplacement::name() const noexcept
     {
         return "Clock";
     }
 
-    FrameId ClockReplacement::selectVictim([[maybe_unused]] const PageTable& pageTable)
+    FrameId ClockReplacement::selectVictim([[maybe_unused]] const PageTable &pageTable)
     {
-        if (impl_->frames.empty()) {
+        if (impl_->frames.empty())
+        {
             return INVALID_FRAME;
         }
 
         // Scan the circular buffer, giving second chances
-        while (true) {
+        while (true)
+        {
             FrameId current = impl_->frames[impl_->hand];
 
-            if (impl_->refBits.count(current) == 0) {
+            if (impl_->refBits.count(current) == 0)
+            {
                 // No reference bit — evict this frame
-                impl_->frames.erase(impl_->frames.begin() +
-                                    static_cast<std::ptrdiff_t>(impl_->hand));
-                if (!impl_->frames.empty()) {
+                impl_->frames.erase(impl_->frames.begin() + static_cast<std::ptrdiff_t>(impl_->hand));
+                if (!impl_->frames.empty())
+                {
                     impl_->hand %= impl_->frames.size();
                 }
-                else {
+                else
+                {
                     impl_->hand = 0;
                 }
                 return current;

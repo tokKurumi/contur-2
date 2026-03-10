@@ -3,12 +3,13 @@
 
 #pragma once
 
-#include "contur/arch/block.h"
+#include <cstddef>
+#include <vector>
+
 #include "contur/core/error.h"
 #include "contur/core/types.h"
 
-#include <cstddef>
-#include <vector>
+#include "contur/arch/block.h"
 
 namespace contur {
 
@@ -23,15 +24,14 @@ namespace contur {
     /// operations, while the MMU handles per-address translation.
     class IVirtualMemory
     {
-    public:
+      public:
         virtual ~IVirtualMemory() = default;
 
         /// @brief Allocates a virtual memory slot for a process.
         /// @param processId The owning process.
         /// @param size Number of Block cells in the virtual address range.
         /// @return The slot index (base virtual address), or an error.
-        [[nodiscard]] virtual Result<MemoryAddress> allocateSlot(ProcessId processId,
-                                                                  std::size_t size) = 0;
+        [[nodiscard]] virtual Result<MemoryAddress> allocateSlot(ProcessId processId, std::size_t size) = 0;
 
         /// @brief Frees a previously allocated slot.
         /// @param processId The owning process.
@@ -42,14 +42,12 @@ namespace contur {
         /// @param processId The owning process.
         /// @param data The blocks to load.
         /// @return Success, or an error if the slot is too small or not allocated.
-        [[nodiscard]] virtual Result<void> loadSegment(ProcessId processId,
-                                                        const std::vector<Block>& data) = 0;
+        [[nodiscard]] virtual Result<void> loadSegment(ProcessId processId, const std::vector<Block> &data) = 0;
 
         /// @brief Reads the entire code/data segment from a process's virtual memory.
         /// @param processId The owning process.
         /// @return The blocks in the slot, or an error.
-        [[nodiscard]] virtual Result<std::vector<Block>> readSegment(
-            ProcessId processId) const = 0;
+        [[nodiscard]] virtual Result<std::vector<Block>> readSegment(ProcessId processId) const = 0;
 
         /// @brief Returns the number of total slots available.
         [[nodiscard]] virtual std::size_t totalSlots() const noexcept = 0;

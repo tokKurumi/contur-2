@@ -3,9 +3,10 @@
 
 #pragma once
 
-#include "contur/arch/block.h"
 #include "contur/core/error.h"
 #include "contur/core/types.h"
+
+#include "contur/arch/block.h"
 
 namespace contur {
 
@@ -16,7 +17,7 @@ namespace contur {
     /// future wrappers (cached memory, protected memory, etc.).
     class IMemory
     {
-    public:
+      public:
         virtual ~IMemory() = default;
 
         /// @brief Reads a Block from the given address.
@@ -28,7 +29,7 @@ namespace contur {
         /// @param address The memory address to write to.
         /// @param block The Block to store.
         /// @return Success or an error if the address is invalid.
-        [[nodiscard]] virtual Result<void> write(MemoryAddress address, const Block& block) = 0;
+        [[nodiscard]] virtual Result<void> write(MemoryAddress address, const Block &block) = 0;
 
         /// @brief Returns the total number of addressable cells.
         [[nodiscard]] virtual std::size_t size() const noexcept = 0;

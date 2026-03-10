@@ -3,10 +3,11 @@
 
 #pragma once
 
-#include "contur/core/types.h"
-#include "contur/memory/page_table.h"
-
 #include <string_view>
+
+#include "contur/core/types.h"
+
+#include "contur/memory/page_table.h"
 
 namespace contur {
 
@@ -17,7 +18,7 @@ namespace contur {
     /// Implementations: FIFO, LRU, Clock, Optimal.
     class IPageReplacementPolicy
     {
-    public:
+      public:
         virtual ~IPageReplacementPolicy() = default;
 
         /// @brief Returns the name of the algorithm (e.g., "FIFO", "LRU").
@@ -26,7 +27,7 @@ namespace contur {
         /// @brief Selects a victim frame to evict.
         /// @param pageTable The current page table state.
         /// @return The FrameId of the frame to evict.
-        [[nodiscard]] virtual FrameId selectVictim(const PageTable& pageTable) = 0;
+        [[nodiscard]] virtual FrameId selectVictim(const PageTable &pageTable) = 0;
 
         /// @brief Notifies the policy that a frame was accessed (read or write).
         virtual void onAccess(FrameId frame) = 0;

@@ -1,11 +1,12 @@
 /// @file test_event.cpp
 /// @brief Unit tests for Event<Args...>.
 
-#include "contur/core/event.h"
-
-#include <gtest/gtest.h>
 #include <string>
 #include <vector>
+
+#include <gtest/gtest.h>
+
+#include "contur/core/event.h"
 
 using namespace contur;
 
@@ -60,7 +61,7 @@ TEST(EventTest, MultipleArguments)
     int receivedId = 0;
     std::string receivedName;
 
-    (void)event.subscribe([&](int id, const std::string& name) {
+    (void)event.subscribe([&](int id, const std::string &name) {
         receivedId = id;
         receivedName = name;
     });

@@ -17,7 +17,8 @@
 namespace contur {
 
     /// @brief Error codes returned by kernel subsystem operations.
-    enum class ErrorCode : std::int32_t {
+    enum class ErrorCode : std::int32_t
+    {
         Ok = 0,
         OutOfMemory,
         InvalidPid,
@@ -44,28 +45,50 @@ namespace contur {
     /// @brief Returns a human-readable name for the given error code.
     [[nodiscard]] constexpr std::string_view errorCodeToString(ErrorCode code) noexcept
     {
-        switch (code) {
-        case ErrorCode::Ok: return "Ok";
-        case ErrorCode::OutOfMemory: return "OutOfMemory";
-        case ErrorCode::InvalidPid: return "InvalidPid";
-        case ErrorCode::InvalidAddress: return "InvalidAddress";
-        case ErrorCode::DivisionByZero: return "DivisionByZero";
-        case ErrorCode::InvalidInstruction: return "InvalidInstruction";
-        case ErrorCode::SegmentationFault: return "SegmentationFault";
-        case ErrorCode::DeviceError: return "DeviceError";
-        case ErrorCode::ProcessNotFound: return "ProcessNotFound";
-        case ErrorCode::PermissionDenied: return "PermissionDenied";
-        case ErrorCode::Timeout: return "Timeout";
-        case ErrorCode::DeadlockDetected: return "DeadlockDetected";
-        case ErrorCode::InvalidState: return "InvalidState";
-        case ErrorCode::InvalidArgument: return "InvalidArgument";
-        case ErrorCode::ResourceBusy: return "ResourceBusy";
-        case ErrorCode::NotFound: return "NotFound";
-        case ErrorCode::AlreadyExists: return "AlreadyExists";
-        case ErrorCode::BufferFull: return "BufferFull";
-        case ErrorCode::BufferEmpty: return "BufferEmpty";
-        case ErrorCode::EndOfFile: return "EndOfFile";
-        case ErrorCode::NotImplemented: return "NotImplemented";
+        switch (code)
+        {
+        case ErrorCode::Ok:
+            return "Ok";
+        case ErrorCode::OutOfMemory:
+            return "OutOfMemory";
+        case ErrorCode::InvalidPid:
+            return "InvalidPid";
+        case ErrorCode::InvalidAddress:
+            return "InvalidAddress";
+        case ErrorCode::DivisionByZero:
+            return "DivisionByZero";
+        case ErrorCode::InvalidInstruction:
+            return "InvalidInstruction";
+        case ErrorCode::SegmentationFault:
+            return "SegmentationFault";
+        case ErrorCode::DeviceError:
+            return "DeviceError";
+        case ErrorCode::ProcessNotFound:
+            return "ProcessNotFound";
+        case ErrorCode::PermissionDenied:
+            return "PermissionDenied";
+        case ErrorCode::Timeout:
+            return "Timeout";
+        case ErrorCode::DeadlockDetected:
+            return "DeadlockDetected";
+        case ErrorCode::InvalidState:
+            return "InvalidState";
+        case ErrorCode::InvalidArgument:
+            return "InvalidArgument";
+        case ErrorCode::ResourceBusy:
+            return "ResourceBusy";
+        case ErrorCode::NotFound:
+            return "NotFound";
+        case ErrorCode::AlreadyExists:
+            return "AlreadyExists";
+        case ErrorCode::BufferFull:
+            return "BufferFull";
+        case ErrorCode::BufferEmpty:
+            return "BufferEmpty";
+        case ErrorCode::EndOfFile:
+            return "EndOfFile";
+        case ErrorCode::NotImplemented:
+            return "NotImplemented";
         }
         return "Unknown";
     }
@@ -77,10 +100,9 @@ namespace contur {
     /// the contained value or error code.
     ///
     /// @tparam T The success value type.
-    template <typename T>
-    class [[nodiscard]] Result
+    template <typename T> class [[nodiscard]] Result
     {
-    public:
+      public:
         /// @brief Constructs a successful Result containing the given value.
         [[nodiscard]] static Result ok(T value)
         {
@@ -108,7 +130,7 @@ namespace contur {
 
         /// @brief Returns a const reference to the success value.
         /// @pre `isOk()` must be true. Undefined behavior otherwise.
-        [[nodiscard]] const T& value() const&
+        [[nodiscard]] const T &value() const &
         {
             assert(isOk() && "Accessing value of error Result");
             return std::get<T>(storage_);
@@ -116,7 +138,7 @@ namespace contur {
 
         /// @brief Returns an rvalue reference to the success value (move semantics).
         /// @pre `isOk()` must be true.
-        [[nodiscard]] T&& value() &&
+        [[nodiscard]] T &&value() &&
         {
             assert(isOk() && "Accessing value of error Result");
             return std::get<T>(std::move(storage_));
@@ -124,7 +146,7 @@ namespace contur {
 
         /// @brief Returns a mutable reference to the success value.
         /// @pre `isOk()` must be true.
-        [[nodiscard]] T& value() &
+        [[nodiscard]] T &value() &
         {
             assert(isOk() && "Accessing value of error Result");
             return std::get<T>(storage_);
@@ -139,26 +161,30 @@ namespace contur {
         }
 
         /// @brief Returns the value if ok, or the provided default value if error.
-        [[nodiscard]] T valueOr(T defaultValue) const&
+        [[nodiscard]] T valueOr(T defaultValue) const &
         {
-            if (isOk()) {
+            if (isOk())
+            {
                 return std::get<T>(storage_);
             }
             return defaultValue;
         }
 
-    private:
-        explicit Result(T value) : storage_(std::move(value)) {}
-        explicit Result(ErrorCode code) : storage_(code) {}
+      private:
+        explicit Result(T value)
+            : storage_(std::move(value))
+        {}
+        explicit Result(ErrorCode code)
+            : storage_(code)
+        {}
 
         std::variant<T, ErrorCode> storage_;
     };
 
     /// @brief Specialization of Result for void — operations that produce no value on success.
-    template <>
-    class [[nodiscard]] Result<void>
+    template <> class [[nodiscard]] Result<void>
     {
-    public:
+      public:
         /// @brief Constructs a successful void Result.
         [[nodiscard]] static Result ok()
         {
@@ -173,16 +199,27 @@ namespace contur {
         }
 
         /// @brief Returns true if this Result represents success.
-        [[nodiscard]] bool isOk() const noexcept { return code_ == ErrorCode::Ok; }
+        [[nodiscard]] bool isOk() const noexcept
+        {
+            return code_ == ErrorCode::Ok;
+        }
 
         /// @brief Returns true if this Result represents failure.
-        [[nodiscard]] bool isError() const noexcept { return code_ != ErrorCode::Ok; }
+        [[nodiscard]] bool isError() const noexcept
+        {
+            return code_ != ErrorCode::Ok;
+        }
 
         /// @brief Returns the error code (Ok if successful).
-        [[nodiscard]] ErrorCode errorCode() const noexcept { return code_; }
+        [[nodiscard]] ErrorCode errorCode() const noexcept
+        {
+            return code_;
+        }
 
-    private:
-        explicit Result(ErrorCode code) : code_(code) {}
+      private:
+        explicit Result(ErrorCode code)
+            : code_(code)
+        {}
 
         ErrorCode code_;
     };

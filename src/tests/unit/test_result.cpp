@@ -1,10 +1,11 @@
 /// @file test_result.cpp
 /// @brief Unit tests for Result<T> and Result<void>.
 
-#include "contur/core/error.h"
+#include <string>
 
 #include <gtest/gtest.h>
-#include <string>
+
+#include "contur/core/error.h"
 
 using namespace contur;
 

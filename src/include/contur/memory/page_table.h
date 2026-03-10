@@ -3,19 +3,20 @@
 
 #pragma once
 
+#include <memory>
+
 #include "contur/core/error.h"
 #include "contur/core/types.h"
-
-#include <memory>
 
 namespace contur {
 
     /// @brief Entry in the page table — maps one virtual page to a physical frame.
-    struct PageTableEntry {
-        FrameId frameId = INVALID_FRAME;  ///< Physical frame number
-        bool present = false;             ///< Page is loaded in physical memory
-        bool dirty = false;               ///< Page has been modified since load
-        bool referenced = false;          ///< Page has been accessed (for Clock algorithm)
+    struct PageTableEntry
+    {
+        FrameId frameId = INVALID_FRAME; ///< Physical frame number
+        bool present = false;            ///< Page is loaded in physical memory
+        bool dirty = false;              ///< Page has been modified since load
+        bool referenced = false;         ///< Page has been accessed (for Clock algorithm)
     };
 
     /// @brief Page table mapping virtual page numbers to physical frames.
@@ -24,16 +25,16 @@ namespace contur {
     /// virtual addresses and to decide which pages to swap in/out.
     class PageTable
     {
-    public:
+      public:
         /// @brief Constructs a page table with the given number of virtual pages.
         explicit PageTable(std::size_t pageCount);
         ~PageTable();
 
         // Non-copyable, movable
-        PageTable(const PageTable&) = delete;
-        PageTable& operator=(const PageTable&) = delete;
-        PageTable(PageTable&&) noexcept;
-        PageTable& operator=(PageTable&&) noexcept;
+        PageTable(const PageTable &) = delete;
+        PageTable &operator=(const PageTable &) = delete;
+        PageTable(PageTable &&) noexcept;
+        PageTable &operator=(PageTable &&) noexcept;
 
         /// @brief Maps a virtual page to a physical frame.
         /// @return Success or InvalidAddress if virtualPage is out of range.
@@ -68,7 +69,7 @@ namespace contur {
         /// @brief Resets all entries to unmapped state.
         void clear();
 
-    private:
+      private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };

@@ -30,10 +30,9 @@ namespace contur {
     ///   onProcess.emit(1, "init");
     ///   onProcess.unsubscribe(id);
     /// @endcode
-    template <typename... Args>
-    class Event
+    template <typename... Args> class Event
     {
-    public:
+      public:
         /// @brief The callback signature for subscribers.
         using Callback = std::function<void(Args...)>;
 
@@ -41,12 +40,12 @@ namespace contur {
         ~Event() = default;
 
         // Non-copyable (subscriptions are identity-bound)
-        Event(const Event&) = delete;
-        Event& operator=(const Event&) = delete;
+        Event(const Event &) = delete;
+        Event &operator=(const Event &) = delete;
 
         // Movable
-        Event(Event&&) noexcept = default;
-        Event& operator=(Event&&) noexcept = default;
+        Event(Event &&) noexcept = default;
+        Event &operator=(Event &&) noexcept = default;
 
         /// @brief Registers a callback to be invoked when the event fires.
         /// @param callback The function to call on emit().
@@ -63,9 +62,11 @@ namespace contur {
         /// @return true if the subscription was found and removed, false otherwise.
         bool unsubscribe(SubscriptionId id)
         {
-            auto it = std::find_if(subscribers_.begin(), subscribers_.end(),
-                                [id](const Subscriber& s) { return s.id == id; });
-            if (it != subscribers_.end()) {
+            auto it = std::find_if(subscribers_.begin(), subscribers_.end(), [id](const Subscriber &s) {
+                return s.id == id;
+            });
+            if (it != subscribers_.end())
+            {
                 subscribers_.erase(it);
                 return true;
             }
@@ -76,7 +77,8 @@ namespace contur {
         /// @param args The arguments to forward to each subscriber.
         void emit(Args... args) const
         {
-            for (const auto& sub : subscribers_) {
+            for (const auto &sub : subscribers_)
+            {
                 sub.callback(args...);
             }
         }
@@ -93,8 +95,9 @@ namespace contur {
             subscribers_.clear();
         }
 
-    private:
-        struct Subscriber {
+      private:
+        struct Subscriber
+        {
             SubscriptionId id;
             Callback callback;
         };

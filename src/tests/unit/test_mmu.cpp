@@ -1,17 +1,17 @@
 /// @file test_mmu.cpp
 /// @brief Unit tests for Mmu.
 
+#include <gtest/gtest.h>
+
 #include "contur/memory/fifo_replacement.h"
 #include "contur/memory/mmu.h"
 #include "contur/memory/physical_memory.h"
-
-#include <gtest/gtest.h>
 
 using namespace contur;
 
 class MmuTest : public ::testing::Test
 {
-protected:
+  protected:
     static constexpr std::size_t MEM_SIZE = 16;
 
     PhysicalMemory memory{MEM_SIZE};

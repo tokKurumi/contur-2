@@ -1,18 +1,18 @@
 /// @file test_virtual_memory.cpp
 /// @brief Unit tests for VirtualMemory.
 
+#include <gtest/gtest.h>
+
 #include "contur/memory/fifo_replacement.h"
 #include "contur/memory/mmu.h"
 #include "contur/memory/physical_memory.h"
 #include "contur/memory/virtual_memory.h"
 
-#include <gtest/gtest.h>
-
 using namespace contur;
 
 class VirtualMemoryTest : public ::testing::Test
 {
-protected:
+  protected:
     static constexpr std::size_t MEM_SIZE = 32;
     static constexpr std::size_t MAX_SLOTS = 8;
 
@@ -144,15 +144,18 @@ TEST_F(VirtualMemoryTest, MultipleProcesses)
     EXPECT_EQ(vm.freeSlots(), MAX_SLOTS - 2);
 
     // Load different data to each process
-    ASSERT_TRUE(vm.loadSegment(1, {{Instruction::Mov, 0, 100, 0},
-                                    {Instruction::Halt, 0, 0, 0},
-                                    {Instruction::Nop, 0, 0, 0},
-                                    {Instruction::Nop, 0, 0, 0}})
+    ASSERT_TRUE(vm.loadSegment(
+                      1,
+                      {{Instruction::Mov, 0, 100, 0},
+                       {Instruction::Halt, 0, 0, 0},
+                       {Instruction::Nop, 0, 0, 0},
+                       {Instruction::Nop, 0, 0, 0}}
+    )
                     .isOk());
-    ASSERT_TRUE(vm.loadSegment(2, {{Instruction::Add, 1, 200, 0},
-                                    {Instruction::Halt, 0, 0, 0},
-                                    {Instruction::Nop, 0, 0, 0}})
-                    .isOk());
+    ASSERT_TRUE(
+        vm.loadSegment(2, {{Instruction::Add, 1, 200, 0}, {Instruction::Halt, 0, 0, 0}, {Instruction::Nop, 0, 0, 0}})
+            .isOk()
+    );
 
     auto seg1 = vm.readSegment(1);
     ASSERT_TRUE(seg1.isOk());
@@ -165,7 +168,8 @@ TEST_F(VirtualMemoryTest, MultipleProcesses)
 
 TEST_F(VirtualMemoryTest, AllocateBeyondMaxSlotsIsError)
 {
-    for (ProcessId pid = 1; pid <= MAX_SLOTS; ++pid) {
+    for (ProcessId pid = 1; pid <= MAX_SLOTS; ++pid)
+    {
         auto result = vm.allocateSlot(pid, 2);
         ASSERT_TRUE(result.isOk()) << "Failed to allocate slot for pid " << pid;
     }
@@ -178,10 +182,13 @@ TEST_F(VirtualMemoryTest, AllocateBeyondMaxSlotsIsError)
 TEST_F(VirtualMemoryTest, MoveSemantics)
 {
     ASSERT_TRUE(vm.allocateSlot(1, 4).isOk());
-    ASSERT_TRUE(vm.loadSegment(1, {{Instruction::Mov, 0, 55, 0},
-                                    {Instruction::Nop, 0, 0, 0},
-                                    {Instruction::Nop, 0, 0, 0},
-                                    {Instruction::Nop, 0, 0, 0}})
+    ASSERT_TRUE(vm.loadSegment(
+                      1,
+                      {{Instruction::Mov, 0, 55, 0},
+                       {Instruction::Nop, 0, 0, 0},
+                       {Instruction::Nop, 0, 0, 0},
+                       {Instruction::Nop, 0, 0, 0}}
+    )
                     .isOk());
 
     VirtualMemory vm2 = std::move(vm);

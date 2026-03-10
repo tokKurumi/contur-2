@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include "contur/core/types.h"
-
 #include <memory>
+
+#include "contur/core/types.h"
 
 namespace contur {
 
@@ -19,7 +19,7 @@ namespace contur {
     /// deterministic testing with mock clocks.
     class IClock
     {
-    public:
+      public:
         virtual ~IClock() = default;
 
         /// @brief Returns the current simulation tick.
@@ -37,23 +37,23 @@ namespace contur {
     /// Uses PIMPL to hide implementation details and provide a compilation firewall.
     class SimulationClock final : public IClock
     {
-    public:
+      public:
         SimulationClock();
         ~SimulationClock() override;
 
         // Non-copyable
-        SimulationClock(const SimulationClock&) = delete;
-        SimulationClock& operator=(const SimulationClock&) = delete;
+        SimulationClock(const SimulationClock &) = delete;
+        SimulationClock &operator=(const SimulationClock &) = delete;
 
         // Movable
-        SimulationClock(SimulationClock&&) noexcept;
-        SimulationClock& operator=(SimulationClock&&) noexcept;
+        SimulationClock(SimulationClock &&) noexcept;
+        SimulationClock &operator=(SimulationClock &&) noexcept;
 
         [[nodiscard]] Tick now() const noexcept override;
         void tick() override;
         void reset() override;
 
-    private:
+      private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };

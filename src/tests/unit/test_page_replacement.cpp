@@ -1,13 +1,13 @@
 /// @file test_page_replacement.cpp
 /// @brief Unit tests for page replacement algorithms (FIFO, LRU, Clock, Optimal).
 
+#include <gtest/gtest.h>
+
 #include "contur/memory/clock_replacement.h"
 #include "contur/memory/fifo_replacement.h"
 #include "contur/memory/lru_replacement.h"
 #include "contur/memory/optimal_replacement.h"
 #include "contur/memory/page_table.h"
-
-#include <gtest/gtest.h>
 
 using namespace contur;
 
@@ -138,9 +138,9 @@ TEST(ClockReplacementTest, SelectVictimWithSecondChance)
     ClockReplacement clock;
     PageTable pt(4);
 
-    clock.onLoad(1);  // ref=1
-    clock.onLoad(2);  // ref=1
-    clock.onLoad(3);  // ref=1
+    clock.onLoad(1); // ref=1
+    clock.onLoad(2); // ref=1
+    clock.onLoad(3); // ref=1
 
     // Clear ref bits by not accessing — but onLoad sets ref bit,
     // so first pass clears all ref bits, second pass evicts first.
@@ -164,9 +164,9 @@ TEST(ClockReplacementTest, AccessedFrameGetsSecondChance)
     ClockReplacement clock;
     PageTable pt(4);
 
-    clock.onLoad(1);  // ref=1
-    clock.onLoad(2);  // ref=1
-    clock.onLoad(3);  // ref=1
+    clock.onLoad(1); // ref=1
+    clock.onLoad(2); // ref=1
+    clock.onLoad(3); // ref=1
 
     // First victim eviction clears all ref bits, then evicts 1
     FrameId first = clock.selectVictim(pt);
@@ -224,7 +224,7 @@ TEST(OptimalReplacementTest, SelectVictimEvictsFrameNotInFuture)
 
     opt.onLoad(1);
     opt.onLoad(2);
-    opt.onLoad(3);  // Frame 3 never appears in future → evict immediately
+    opt.onLoad(3); // Frame 3 never appears in future → evict immediately
 
     FrameId victim = opt.selectVictim(pt);
     EXPECT_EQ(victim, 3u);
