@@ -2,51 +2,114 @@
     "version": 6,
     "configurePresets": [
         {
-            "name": "debug",
-            "displayName": "Debug (Clang)",
+            "name": "base-debug",
+            "hidden": true,
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/debug",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
+                "CONTUR2_ENABLE_TRACING": "ON"
+            }
+        },
+        {
+            "name": "base-release",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "debug",
+            "displayName": "Debug (Clang)",
+            "inherits": "base-debug",
+            "cacheVariables": {
                 "CMAKE_CXX_COMPILER": "clang++",
                 "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic -fsanitize=address,undefined",
-                "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined",
-                "CONTUR2_ENABLE_TRACING": "ON"
+                "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined"
+            },
+            "condition": {
+                "type": "notEquals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
             }
         },
         {
             "name": "release",
             "displayName": "Release (Clang)",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build/release",
+            "inherits": "base-release",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_CXX_COMPILER": "clang++",
                 "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic"
+            },
+            "condition": {
+                "type": "notEquals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
             }
         },
         {
             "name": "gcc-debug",
             "displayName": "Debug (GCC)",
-            "generator": "Ninja",
+            "inherits": "base-debug",
             "binaryDir": "${sourceDir}/build/gcc-debug",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_CXX_COMPILER": "g++",
                 "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic -fsanitize=address,undefined",
                 "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined"
+            },
+            "condition": {
+                "type": "notEquals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "win-debug",
+            "displayName": "Debug (MSVC/Clang-cl)",
+            "inherits": "base-debug",
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_CXX_FLAGS": "/W4 /EHsc /fsanitize=address"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "win-release",
+            "displayName": "Release (MSVC/Clang-cl)",
+            "inherits": "base-release",
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_CXX_FLAGS": "/W4 /EHsc"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
             }
         }
     ],
     "buildPresets": [
         { "name": "debug", "configurePreset": "debug" },
         { "name": "release", "configurePreset": "release" },
-        { "name": "gcc-debug", "configurePreset": "gcc-debug" }
+        { "name": "gcc-debug", "configurePreset": "gcc-debug" },
+        { "name": "win-debug", "configurePreset": "win-debug" },
+        { "name": "win-release", "configurePreset": "win-release" }
     ],
     "testPresets": [
         {
             "name": "debug",
             "configurePreset": "debug",
+            "output": { "outputOnFailure": true }
+        },
+        {
+            "name": "win-debug",
+            "configurePreset": "win-debug",
             "output": { "outputOnFailure": true }
         }
     ]

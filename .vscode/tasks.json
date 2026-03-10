@@ -10,6 +10,15 @@
                 "debug",
                 "${workspaceFolder}/src"
             ],
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-ExecutionPolicy", "Bypass",
+                    "-File", "${workspaceFolder}/src/build.ps1",
+                    "-Preset", "debug",
+                    "-SourceDir", "${workspaceFolder}/src"
+                ]
+            },
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -29,6 +38,15 @@
                 "release",
                 "${workspaceFolder}/src"
             ],
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-ExecutionPolicy", "Bypass",
+                    "-File", "${workspaceFolder}/src/build.ps1",
+                    "-Preset", "release",
+                    "-SourceDir", "${workspaceFolder}/src"
+                ]
+            },
             "group": "build",
             "presentation": {
                 "reveal": "always",
@@ -41,6 +59,12 @@
             "type": "shell",
             "command": "ctest",
             "args": ["--preset", "debug", "--output-on-failure"],
+            "windows": {
+                "args": ["--preset", "win-debug", "--output-on-failure"]
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/src"
+            },
             "group": "test",
             "presentation": {
                 "reveal": "always",
@@ -52,6 +76,13 @@
             "label": "Clear build artifacts",
             "type": "shell",
             "command": "rm -rf ${workspaceFolder}/src/build/*",
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-Command",
+                    "Remove-Item -Recurse -Force '${workspaceFolder}/src/build/*' -ErrorAction SilentlyContinue"
+                ]
+            },
             "group": "build",
             "presentation": {
                 "reveal": "always",
@@ -66,6 +97,13 @@
             "args": [
                 "${workspaceFolder}/misc/format.sh"
             ],
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-Command",
+                    "Get-ChildItem -Path '${workspaceFolder}/src' -Recurse -Include *.cpp,*.h | Where-Object { $_.FullName -notmatch 'build' } | ForEach-Object { clang-format -i $_.FullName; Write-Host \"  Formatted: $($_.Name)\" }"
+                ]
+            },
             "group": "build",
             "presentation": {
                 "reveal": "always",

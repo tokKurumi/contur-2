@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug contur2",
+            "name": "Debug contur2 (Linux/macOS)",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/src/build/debug/app/contur2",
@@ -31,6 +31,18 @@
             "logging": {
                 "engineLogging": false
             }
+        },
+        {
+            "name": "Debug contur2 (Windows)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/build/debug/app/contur2.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/src",
+            "environment": [],
+            "externalConsole": false,
+            "preLaunchTask": "Build contur2 (Debug)"
         }
     ]
 }

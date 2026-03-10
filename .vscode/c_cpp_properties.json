@@ -2,7 +2,7 @@
     "version": 4,
     "configurations": [
         {
-            "name": "contur2-Debug",
+            "name": "contur2-Debug (Linux)",
             "compileCommands": "${workspaceFolder}/src/build/debug/compile_commands.json",
             "intelliSenseMode": "clang-x64",
             "cppStandard": "c++20",
@@ -13,6 +13,21 @@
             ],
             "defines": [
                 "CONTUR_TRACE_ENABLED"
+            ]
+        },
+        {
+            "name": "contur2-Debug (Windows)",
+            "compileCommands": "${workspaceFolder}/src/build/debug/compile_commands.json",
+            "intelliSenseMode": "msvc-x64",
+            "cppStandard": "c++20",
+            "cStandard": "c17",
+            "compilerPath": "cl.exe",
+            "includePath": [
+                "${workspaceFolder}/src/include"
+            ],
+            "defines": [
+                "CONTUR_TRACE_ENABLED",
+                "_WIN32"
             ]
         }
     ]
