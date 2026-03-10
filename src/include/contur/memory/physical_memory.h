@@ -12,8 +12,8 @@ namespace contur {
 
     /// @brief Simulated physical RAM — a linear array of Block cells.
     ///
-    /// Uses PIMPL to hide the backing store. Supports read, write, clear,
-    /// and bulk operations for loading/saving code segments (swap in/out).
+    /// Supports read, write, clear, and bulk operations for
+    /// loading/saving code segments (swap in/out).
     class PhysicalMemory final : public IMemory
     {
       public:

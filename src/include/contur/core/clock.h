@@ -33,8 +33,6 @@ namespace contur {
     };
 
     /// @brief Concrete simulation clock — a simple monotonic tick counter.
-    ///
-    /// Uses PIMPL to hide implementation details and provide a compilation firewall.
     class SimulationClock final : public IClock
     {
       public:
