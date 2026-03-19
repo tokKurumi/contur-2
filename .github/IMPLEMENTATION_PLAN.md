@@ -504,7 +504,7 @@ Phase 2:  Memory                   ████████████         
 Phase 3:  Process                  ████████             ✅  (5 tasks,  99 tests)
 Phase 4:  CPU + I/O                ████████████         ✅  (7 tasks,  94 tests)
 Phase 5:  Interpreter              ████████             ✅  (3 tasks,  26 tests)
-Phase 6:  Scheduling               ████████████████ ✅  (11 tasks, 21 tests)
+Phase 6:  Scheduling               ████████████████     ✅  (11 tasks, 21 tests)
 Phase 7:  Dispatch + Sync          ████████████████
 Phase 8:  IPC + Syscalls           ████████████
 Phase 9:  File System              ████████████
