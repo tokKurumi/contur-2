@@ -24,7 +24,8 @@ namespace contur {
         return "SPN";
     }
 
-    ProcessId SpnPolicy::selectNext(const std::vector<const PCB *> &readyQueue, const IClock &clock) const
+    ProcessId
+    SpnPolicy::selectNext(const std::vector<std::reference_wrapper<const PCB>> &readyQueue, const IClock &clock) const
     {
         (void)clock;
         if (readyQueue.empty())
@@ -32,16 +33,16 @@ namespace contur {
             return INVALID_PID;
         }
 
-        const PCB *selected = *std::min_element(readyQueue.begin(), readyQueue.end(), [](const PCB *a, const PCB *b) {
-            Tick lhs = serviceTime(*a);
-            Tick rhs = serviceTime(*b);
+        auto selected = std::min_element(readyQueue.begin(), readyQueue.end(), [](const auto &a, const auto &b) {
+            Tick lhs = serviceTime(a.get());
+            Tick rhs = serviceTime(b.get());
             if (lhs != rhs)
             {
                 return lhs < rhs;
             }
-            return a->id() < b->id();
+            return a.get().id() < b.get().id();
         });
-        return selected->id();
+        return selected->get().id();
     }
 
     bool SpnPolicy::shouldPreempt(const PCB &running, const PCB &candidate, const IClock &clock) const

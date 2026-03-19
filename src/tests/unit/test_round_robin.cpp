@@ -1,6 +1,8 @@
 /// @file test_round_robin.cpp
 /// @brief Unit tests for Round Robin scheduling policy.
 
+#include <functional>
+
 #include <gtest/gtest.h>
 
 #include "contur/core/clock.h"
@@ -22,7 +24,7 @@ TEST(RoundRobinPolicyTest, SelectsOldestReadyByLastStateChange)
     ASSERT_TRUE(p1.setState(ProcessState::Ready, 3));
     ASSERT_TRUE(p2.setState(ProcessState::Ready, 1));
 
-    std::vector<const PCB *> ready = {&p1, &p2};
+    std::vector<std::reference_wrapper<const PCB>> ready = {std::cref(p1), std::cref(p2)};
     EXPECT_EQ(policy.selectNext(ready, clock), 2u);
 }
 

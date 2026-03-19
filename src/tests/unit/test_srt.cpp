@@ -1,6 +1,8 @@
 /// @file test_srt.cpp
 /// @brief Unit tests for SRT scheduling policy.
 
+#include <functional>
+
 #include <gtest/gtest.h>
 
 #include "contur/core/clock.h"
@@ -23,7 +25,7 @@ TEST(SrtPolicyTest, SelectsSmallestRemainingBurst)
     p2.timing().remainingBurst = 2;
     p3.timing().remainingBurst = 5;
 
-    std::vector<const PCB *> ready = {&p1, &p2, &p3};
+    std::vector<std::reference_wrapper<const PCB>> ready = {std::cref(p1), std::cref(p2), std::cref(p3)};
     EXPECT_EQ(policy.selectNext(ready, clock), 2u);
 }
 

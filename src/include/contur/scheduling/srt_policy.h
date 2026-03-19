@@ -11,8 +11,9 @@ namespace contur {
     {
         public:
         [[nodiscard]] std::string_view name() const noexcept override;
-        [[nodiscard]] ProcessId
-        selectNext(const std::vector<const PCB *> &readyQueue, const IClock &clock) const override;
+        [[nodiscard]] ProcessId selectNext(
+            const std::vector<std::reference_wrapper<const PCB>> &readyQueue, const IClock &clock
+        ) const override;
         [[nodiscard]] bool shouldPreempt(const PCB &running, const PCB &candidate, const IClock &clock) const override;
     };
 

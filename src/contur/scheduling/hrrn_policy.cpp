@@ -25,7 +25,8 @@ namespace contur {
         return "HRRN";
     }
 
-    ProcessId HrrnPolicy::selectNext(const std::vector<const PCB *> &readyQueue, const IClock &clock) const
+    ProcessId
+    HrrnPolicy::selectNext(const std::vector<std::reference_wrapper<const PCB>> &readyQueue, const IClock &clock) const
     {
         (void)clock;
         if (readyQueue.empty())
@@ -33,16 +34,16 @@ namespace contur {
             return INVALID_PID;
         }
 
-        const PCB *selected = *std::max_element(readyQueue.begin(), readyQueue.end(), [](const PCB *a, const PCB *b) {
-            double lhs = responseRatio(*a);
-            double rhs = responseRatio(*b);
+        auto selected = std::max_element(readyQueue.begin(), readyQueue.end(), [](const auto &a, const auto &b) {
+            double lhs = responseRatio(a.get());
+            double rhs = responseRatio(b.get());
             if (lhs != rhs)
             {
                 return lhs < rhs;
             }
-            return a->id() > b->id();
+            return a.get().id() > b.get().id();
         });
-        return selected->id();
+        return selected->get().id();
     }
 
     bool HrrnPolicy::shouldPreempt(const PCB &running, const PCB &candidate, const IClock &clock) const

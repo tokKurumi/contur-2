@@ -1,6 +1,8 @@
 /// @file test_fcfs.cpp
 /// @brief Unit tests for FCFS scheduling policy.
 
+#include <functional>
+
 #include <gtest/gtest.h>
 
 #include "contur/core/clock.h"
@@ -19,7 +21,7 @@ TEST(FcfsPolicyTest, SelectsEarliestArrival)
     PCB p2(2, "p2", Priority{}, 5);
     PCB p3(3, "p3", Priority{}, 20);
 
-    std::vector<const PCB *> ready = {&p1, &p2, &p3};
+    std::vector<std::reference_wrapper<const PCB>> ready = {std::cref(p1), std::cref(p2), std::cref(p3)};
     EXPECT_EQ(policy.selectNext(ready, clock), 2u);
 }
 

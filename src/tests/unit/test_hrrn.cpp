@@ -1,6 +1,8 @@
 /// @file test_hrrn.cpp
 /// @brief Unit tests for HRRN scheduling policy.
 
+#include <functional>
+
 #include <gtest/gtest.h>
 
 #include "contur/core/clock.h"
@@ -28,7 +30,7 @@ TEST(HrrnPolicyTest, SelectsHighestResponseRatio)
     p3.timing().estimatedBurst = 5;
     p3.timing().totalWaitTime = 5; // ratio 2.0
 
-    std::vector<const PCB *> ready = {&p1, &p2, &p3};
+    std::vector<std::reference_wrapper<const PCB>> ready = {std::cref(p1), std::cref(p2), std::cref(p3)};
     EXPECT_EQ(policy.selectNext(ready, clock), 2u);
 }
 

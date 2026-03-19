@@ -1,6 +1,8 @@
 /// @file test_spn.cpp
 /// @brief Unit tests for SPN scheduling policy.
 
+#include <functional>
+
 #include <gtest/gtest.h>
 
 #include "contur/core/clock.h"
@@ -23,7 +25,7 @@ TEST(SpnPolicyTest, SelectsSmallestEstimatedBurst)
     p2.timing().estimatedBurst = 3;
     p3.timing().estimatedBurst = 7;
 
-    std::vector<const PCB *> ready = {&p1, &p2, &p3};
+    std::vector<std::reference_wrapper<const PCB>> ready = {std::cref(p1), std::cref(p2), std::cref(p3)};
     EXPECT_EQ(policy.selectNext(ready, clock), 2u);
 }
 

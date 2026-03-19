@@ -48,7 +48,8 @@ namespace contur {
         return "MLFQ";
     }
 
-    ProcessId MlfqPolicy::selectNext(const std::vector<const PCB *> &readyQueue, const IClock &clock) const
+    ProcessId
+    MlfqPolicy::selectNext(const std::vector<std::reference_wrapper<const PCB>> &readyQueue, const IClock &clock) const
     {
         (void)clock;
         if (readyQueue.empty())
@@ -56,25 +57,24 @@ namespace contur {
             return INVALID_PID;
         }
 
-        const PCB *selected =
-            *std::min_element(readyQueue.begin(), readyQueue.end(), [this](const PCB *a, const PCB *b) {
-                std::size_t levelA = priorityToLevel(*a, levelTimeSlices_.size());
-                std::size_t levelB = priorityToLevel(*b, levelTimeSlices_.size());
+        auto selected = std::min_element(readyQueue.begin(), readyQueue.end(), [this](const auto &a, const auto &b) {
+            std::size_t levelA = priorityToLevel(a.get(), levelTimeSlices_.size());
+            std::size_t levelB = priorityToLevel(b.get(), levelTimeSlices_.size());
 
-                if (levelA != levelB)
-                {
-                    return levelA < levelB;
-                }
+            if (levelA != levelB)
+            {
+                return levelA < levelB;
+            }
 
-                if (a->timing().lastStateChange != b->timing().lastStateChange)
-                {
-                    return a->timing().lastStateChange < b->timing().lastStateChange;
-                }
+            if (a.get().timing().lastStateChange != b.get().timing().lastStateChange)
+            {
+                return a.get().timing().lastStateChange < b.get().timing().lastStateChange;
+            }
 
-                return a->id() < b->id();
-            });
+            return a.get().id() < b.get().id();
+        });
 
-        return selected->id();
+        return selected->get().id();
     }
 
     bool MlfqPolicy::shouldPreempt(const PCB &running, const PCB &candidate, const IClock &clock) const

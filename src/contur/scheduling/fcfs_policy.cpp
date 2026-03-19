@@ -16,7 +16,8 @@ namespace contur {
         return "FCFS";
     }
 
-    ProcessId FcfsPolicy::selectNext(const std::vector<const PCB *> &readyQueue, const IClock &clock) const
+    ProcessId
+    FcfsPolicy::selectNext(const std::vector<std::reference_wrapper<const PCB>> &readyQueue, const IClock &clock) const
     {
         (void)clock;
         if (readyQueue.empty())
@@ -24,15 +25,15 @@ namespace contur {
             return INVALID_PID;
         }
 
-        const PCB *selected = *std::min_element(readyQueue.begin(), readyQueue.end(), [](const PCB *a, const PCB *b) {
-            if (a->timing().arrivalTime != b->timing().arrivalTime)
+        auto selected = std::min_element(readyQueue.begin(), readyQueue.end(), [](const auto &a, const auto &b) {
+            if (a.get().timing().arrivalTime != b.get().timing().arrivalTime)
             {
-                return a->timing().arrivalTime < b->timing().arrivalTime;
+                return a.get().timing().arrivalTime < b.get().timing().arrivalTime;
             }
-            return a->id() < b->id();
+            return a.get().id() < b.get().id();
         });
 
-        return selected->id();
+        return selected->get().id();
     }
 
     bool FcfsPolicy::shouldPreempt(const PCB &running, const PCB &candidate, const IClock &clock) const

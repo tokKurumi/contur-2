@@ -1,6 +1,8 @@
 /// @file test_priority_policy.cpp
 /// @brief Unit tests for Priority scheduling policy.
 
+#include <functional>
+
 #include <gtest/gtest.h>
 
 #include "contur/core/clock.h"
@@ -19,7 +21,7 @@ TEST(PriorityPolicyTest, SelectsHighestEffectivePriority)
     PCB high(2, "high", Priority(PriorityLevel::High));
     PCB normal(3, "normal", Priority(PriorityLevel::Normal));
 
-    std::vector<const PCB *> ready = {&low, &high, &normal};
+    std::vector<std::reference_wrapper<const PCB>> ready = {std::cref(low), std::cref(high), std::cref(normal)};
     EXPECT_EQ(policy.selectNext(ready, clock), 2u);
 }
 

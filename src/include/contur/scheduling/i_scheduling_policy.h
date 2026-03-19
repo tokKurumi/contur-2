@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <functional>
 #include <string_view>
 #include <vector>
 
@@ -23,11 +24,11 @@ namespace contur {
         [[nodiscard]] virtual std::string_view name() const noexcept = 0;
 
         /// @brief Selects the next process ID from the ready queue.
-        /// @param readyQueue Non-owning pointers to ready PCBs.
+        /// @param readyQueue Non-owning references to ready PCBs.
         /// @param clock Simulation clock.
         /// @return Selected process ID, or INVALID_PID if queue is empty.
         [[nodiscard]] virtual ProcessId
-        selectNext(const std::vector<const PCB *> &readyQueue, const IClock &clock) const = 0;
+        selectNext(const std::vector<std::reference_wrapper<const PCB>> &readyQueue, const IClock &clock) const = 0;
 
         /// @brief Decides whether the current running process should be preempted.
         /// @param running Currently running process.

@@ -4,6 +4,8 @@
 #include "contur/scheduling/scheduler.h"
 
 #include <algorithm>
+#include <functional>
+#include <optional>
 #include <stdexcept>
 #include <unordered_map>
 #include <utility>
@@ -21,11 +23,11 @@ namespace contur {
     {
         std::unique_ptr<ISchedulingPolicy> policy;
         Statistics statistics;
-        std::unordered_map<ProcessId, PCB *> processes;
+        std::unordered_map<ProcessId, std::reference_wrapper<PCB>> processes;
         std::unordered_map<ProcessId, Tick> runStart;
-        std::vector<PCB *> ready;
-        std::vector<PCB *> blocked;
-        PCB *running = nullptr;
+        std::vector<std::reference_wrapper<PCB>> ready;
+        std::vector<std::reference_wrapper<PCB>> blocked;
+        std::optional<std::reference_wrapper<PCB>> running;
 
         explicit Impl(std::unique_ptr<ISchedulingPolicy> policy)
             : policy(std::move(policy))
@@ -37,41 +39,39 @@ namespace contur {
             return processes.find(pid) != processes.end();
         }
 
-        [[nodiscard]] static std::vector<const PCB *> asConst(const std::vector<PCB *> &queue)
+        [[nodiscard]] static std::vector<std::reference_wrapper<const PCB>>
+        asConst(const std::vector<std::reference_wrapper<PCB>> &queue)
         {
-            std::vector<const PCB *> out;
+            std::vector<std::reference_wrapper<const PCB>> out;
             out.reserve(queue.size());
-            for (const PCB *pcb : queue)
+            for (const auto &pcb : queue)
             {
-                out.push_back(pcb);
+                out.push_back(std::cref(pcb.get()));
             }
             return out;
         }
 
-        static void removeFrom(std::vector<PCB *> &queue, ProcessId pid)
+        static void removeFrom(std::vector<std::reference_wrapper<PCB>> &queue, ProcessId pid)
         {
             queue.erase(
-                std::remove_if(queue.begin(), queue.end(), [pid](const PCB *pcb) { return pcb->id() == pid; }),
+                std::remove_if(
+                    queue.begin(),
+                    queue.end(),
+                    [pid](const std::reference_wrapper<PCB> &pcb) { return pcb.get().id() == pid; }
+                ),
                 queue.end()
             );
         }
 
-        [[nodiscard]] PCB *findIn(std::vector<PCB *> &queue, ProcessId pid)
+        [[nodiscard]] std::optional<std::reference_wrapper<PCB>>
+        findIn(std::vector<std::reference_wrapper<PCB>> &queue, ProcessId pid)
         {
-            auto it = std::find_if(queue.begin(), queue.end(), [pid](const PCB *pcb) { return pcb->id() == pid; });
+            auto it = std::find_if(queue.begin(), queue.end(), [pid](const std::reference_wrapper<PCB> &pcb) {
+                return pcb.get().id() == pid;
+            });
             if (it == queue.end())
             {
-                return nullptr;
-            }
-            return *it;
-        }
-
-        [[nodiscard]] const PCB *findIn(const std::vector<PCB *> &queue, ProcessId pid) const
-        {
-            auto it = std::find_if(queue.begin(), queue.end(), [pid](const PCB *pcb) { return pcb->id() == pid; });
-            if (it == queue.end())
-            {
-                return nullptr;
+                return std::nullopt;
             }
             return *it;
         }
@@ -115,10 +115,10 @@ namespace contur {
 
         if (!impl_->isKnown(pcb.id()))
         {
-            impl_->processes.emplace(pcb.id(), &pcb);
+            impl_->processes.emplace(pcb.id(), std::ref(pcb));
         }
 
-        if (impl_->findIn(impl_->ready, pcb.id()) != nullptr)
+        if (impl_->findIn(impl_->ready, pcb.id()).has_value())
         {
             return Result<void>::ok();
         }
@@ -137,7 +137,7 @@ namespace contur {
         {
             pcb.timing().estimatedBurst = impl_->statistics.predictedBurst(pcb.id());
         }
-        impl_->ready.push_back(&pcb);
+        impl_->ready.push_back(std::ref(pcb));
         return Result<void>::ok();
     }
 
@@ -148,9 +148,9 @@ namespace contur {
             return Result<void>::error(ErrorCode::NotFound);
         }
 
-        if (impl_->running != nullptr && impl_->running->id() == pid)
+        if (impl_->running.has_value() && impl_->running->get().id() == pid)
         {
-            impl_->running = nullptr;
+            impl_->running.reset();
         }
 
         Impl::removeFrom(impl_->ready, pid);
@@ -164,9 +164,9 @@ namespace contur {
 
     Result<ProcessId> Scheduler::selectNext(const IClock &clock)
     {
-        if (impl_->ready.empty() && impl_->running != nullptr)
+        if (impl_->ready.empty() && impl_->running.has_value())
         {
-            return Result<ProcessId>::ok(impl_->running->id());
+            return Result<ProcessId>::ok(impl_->running->get().id());
         }
 
         if (impl_->ready.empty())
@@ -181,76 +181,80 @@ namespace contur {
             return Result<ProcessId>::error(ErrorCode::InvalidState);
         }
 
-        PCB *candidate = impl_->findIn(impl_->ready, candidateId);
-        if (candidate == nullptr)
+        auto candidateOpt = impl_->findIn(impl_->ready, candidateId);
+        if (!candidateOpt.has_value())
         {
             return Result<ProcessId>::error(ErrorCode::InvalidState);
         }
+        PCB &candidate = candidateOpt->get();
 
-        if (impl_->running != nullptr)
+        if (impl_->running.has_value())
         {
-            if (!impl_->policy->shouldPreempt(*impl_->running, *candidate, clock))
+            PCB &running = impl_->running->get();
+            if (!impl_->policy->shouldPreempt(running, candidate, clock))
             {
-                return Result<ProcessId>::ok(impl_->running->id());
+                return Result<ProcessId>::ok(running.id());
             }
 
-            ProcessId runningPid = impl_->running->id();
+            ProcessId runningPid = running.id();
             impl_->recordRunningBurst(runningPid, clock.now());
-            if (!impl_->running->setState(ProcessState::Ready, clock.now()))
+            if (!running.setState(ProcessState::Ready, clock.now()))
             {
                 return Result<ProcessId>::error(ErrorCode::InvalidState);
             }
-            impl_->ready.push_back(impl_->running);
-            impl_->running = nullptr;
+            impl_->ready.push_back(std::ref(running));
+            impl_->running.reset();
         }
 
         Impl::removeFrom(impl_->ready, candidateId);
 
-        if (!candidate->setState(ProcessState::Running, clock.now()))
+        if (!candidate.setState(ProcessState::Running, clock.now()))
         {
             return Result<ProcessId>::error(ErrorCode::InvalidState);
         }
 
-        impl_->running = candidate;
-        impl_->runStart[candidate->id()] = clock.now();
-        return Result<ProcessId>::ok(candidate->id());
+        impl_->running = std::ref(candidate);
+        impl_->runStart[candidate.id()] = clock.now();
+        return Result<ProcessId>::ok(candidate.id());
     }
 
     Result<void> Scheduler::blockRunning(Tick currentTick)
     {
-        if (impl_->running == nullptr)
+        if (!impl_->running.has_value())
         {
             return Result<void>::error(ErrorCode::NotFound);
         }
 
-        ProcessId pid = impl_->running->id();
+        PCB &running = impl_->running->get();
+        ProcessId pid = running.id();
         impl_->recordRunningBurst(pid, currentTick);
 
-        if (!impl_->running->setState(ProcessState::Blocked, currentTick))
+        if (!running.setState(ProcessState::Blocked, currentTick))
         {
             return Result<void>::error(ErrorCode::InvalidState);
         }
 
-        impl_->blocked.push_back(impl_->running);
-        impl_->running = nullptr;
+        impl_->blocked.push_back(std::ref(running));
+        impl_->running.reset();
         return Result<void>::ok();
     }
 
     Result<void> Scheduler::unblock(ProcessId pid, Tick currentTick)
     {
-        PCB *process = impl_->findIn(impl_->blocked, pid);
-        if (process == nullptr)
+        auto processOpt = impl_->findIn(impl_->blocked, pid);
+        if (!processOpt.has_value())
         {
             return Result<void>::error(ErrorCode::NotFound);
         }
+        PCB &process = processOpt->get();
 
-        if (!process->setState(ProcessState::Ready, currentTick))
+        if (!process.setState(ProcessState::Ready, currentTick))
         {
             return Result<void>::error(ErrorCode::InvalidState);
         }
 
         Impl::removeFrom(impl_->blocked, pid);
-        impl_->ready.push_back(process);
+        impl_->ready.push_back(std::ref(process));
         return Result<void>::ok();
     }
 
@@ -261,23 +265,23 @@ namespace contur {
             return Result<void>::error(ErrorCode::NotFound);
         }
 
-        PCB *process = nullptr;
-        if (impl_->running != nullptr && impl_->running->id() == pid)
+        std::optional<std::reference_wrapper<PCB>> process;
+        if (impl_->running.has_value() && impl_->running->get().id() == pid)
         {
             process = impl_->running;
             impl_->recordRunningBurst(pid, currentTick);
-            impl_->running = nullptr;
+            impl_->running.reset();
         }
         else
         {
-            process = impl_->processes[pid];
+            process = impl_->processes.find(pid)->second;
             Impl::removeFrom(impl_->ready, pid);
             Impl::removeFrom(impl_->blocked, pid);
         }
 
-        if (process != nullptr)
+        if (process.has_value())
         {
-            if (!process->setState(ProcessState::Terminated, currentTick))
+            if (!process->get().setState(ProcessState::Terminated, currentTick))
             {
                 return Result<void>::error(ErrorCode::InvalidState);
             }
@@ -294,9 +298,9 @@ namespace contur {
     {
         std::vector<ProcessId> out;
         out.reserve(impl_->ready.size());
-        for (const PCB *pcb : impl_->ready)
+        for (const auto &pcb : impl_->ready)
         {
-            out.push_back(pcb->id());
+            out.push_back(pcb.get().id());
         }
         return out;
     }
@@ -305,20 +309,20 @@ namespace contur {
     {
         std::vector<ProcessId> out;
         out.reserve(impl_->blocked.size());
-        for (const PCB *pcb : impl_->blocked)
+        for (const auto &pcb : impl_->blocked)
         {
-            out.push_back(pcb->id());
+            out.push_back(pcb.get().id());
         }
         return out;
     }
 
     ProcessId Scheduler::runningProcess() const noexcept
     {
-        if (impl_->running == nullptr)
+        if (!impl_->running.has_value())
         {
             return INVALID_PID;
         }
-        return impl_->running->id();
+        return impl_->running->get().id();
     }
 
     Result<void> Scheduler::setPolicy(std::unique_ptr<ISchedulingPolicy> policy)

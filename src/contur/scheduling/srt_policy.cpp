@@ -31,7 +31,8 @@ namespace contur {
         return "SRT";
     }
 
-    ProcessId SrtPolicy::selectNext(const std::vector<const PCB *> &readyQueue, const IClock &clock) const
+    ProcessId
+    SrtPolicy::selectNext(const std::vector<std::reference_wrapper<const PCB>> &readyQueue, const IClock &clock) const
     {
         (void)clock;
         if (readyQueue.empty())
@@ -39,16 +40,16 @@ namespace contur {
             return INVALID_PID;
         }
 
-        const PCB *selected = *std::min_element(readyQueue.begin(), readyQueue.end(), [](const PCB *a, const PCB *b) {
-            Tick lhs = remaining(*a);
-            Tick rhs = remaining(*b);
+        auto selected = std::min_element(readyQueue.begin(), readyQueue.end(), [](const auto &a, const auto &b) {
+            Tick lhs = remaining(a.get());
+            Tick rhs = remaining(b.get());
             if (lhs != rhs)
             {
                 return lhs < rhs;
             }
-            return a->id() < b->id();
+            return a.get().id() < b.get().id();
         });
-        return selected->id();
+        return selected->get().id();
     }
 
     bool SrtPolicy::shouldPreempt(const PCB &running, const PCB &candidate, const IClock &clock) const

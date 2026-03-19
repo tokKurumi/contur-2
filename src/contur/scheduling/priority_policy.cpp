@@ -32,7 +32,9 @@ namespace contur {
         return "Priority";
     }
 
-    ProcessId PriorityPolicy::selectNext(const std::vector<const PCB *> &readyQueue, const IClock &clock) const
+    ProcessId PriorityPolicy::selectNext(
+        const std::vector<std::reference_wrapper<const PCB>> &readyQueue, const IClock &clock
+    ) const
     {
         (void)clock;
         if (readyQueue.empty())
@@ -40,10 +42,10 @@ namespace contur {
             return INVALID_PID;
         }
 
-        const PCB *selected = *std::min_element(readyQueue.begin(), readyQueue.end(), [](const PCB *a, const PCB *b) {
-            return betterPriority(*a, *b);
+        auto selected = std::min_element(readyQueue.begin(), readyQueue.end(), [](const auto &a, const auto &b) {
+            return betterPriority(a.get(), b.get());
         });
-        return selected->id();
+        return selected->get().id();
     }
 
     bool PriorityPolicy::shouldPreempt(const PCB &running, const PCB &candidate, const IClock &clock) const

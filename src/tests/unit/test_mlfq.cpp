@@ -1,6 +1,8 @@
 /// @file test_mlfq.cpp
 /// @brief Unit tests for MLFQ scheduling policy.
 
+#include <functional>
+
 #include <gtest/gtest.h>
 
 #include "contur/core/clock.h"
@@ -19,7 +21,7 @@ TEST(MlfqPolicyTest, SelectsFromHighestPriorityLevel)
     PCB low(1, "low", Priority(PriorityLevel::Low));
     PCB high(2, "high", Priority(PriorityLevel::High));
 
-    std::vector<const PCB *> ready = {&low, &high};
+    std::vector<std::reference_wrapper<const PCB>> ready = {std::cref(low), std::cref(high)};
     EXPECT_EQ(policy.selectNext(ready, clock), 2u);
 }
 
