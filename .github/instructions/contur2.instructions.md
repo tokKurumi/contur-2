@@ -331,13 +331,17 @@ struct Priority {
 | **Sole ownership** | `std::unique_ptr<T>` | Kernel owns Dispatcher; Dispatcher owns VirtualMemory; CPU owns ALU |
 | **Shared ownership** | `std::shared_ptr<T>` | ProcessImage's code segment (shared between VirtualMemory and MMU during swap) |
 | **Non-owning reference** | `T&` or `std::reference_wrapper<T>` | Scheduler references ICPU; CPU references IMemory |
-| **Optional non-owning** | `T*` (raw) or `std::optional<std::reference_wrapper<T>>` | PCB's optional register file link |
+| **Optional non-owning** | Prefer `std::optional<std::reference_wrapper<T>>`; use `T*` only when unavoidable | PCB's optional register file link |
 | **Observer/weak reference** | `std::weak_ptr<T>` | Event subscribers; process handles returned to user code |
 
 **Rules**:
 - **No owning raw pointers**. Every `new` must be wrapped in `std::make_unique` or `std::make_shared`.
 - **No `delete`** anywhere in the codebase.
 - Prefer `std::unique_ptr` by default; upgrade to `std::shared_ptr` only when shared ownership is genuinely needed.
+- Avoid raw pointers where practical, even for non-owning relationships: prefer `T&`, `std::reference_wrapper<T>`,
+    `std::optional<std::reference_wrapper<T>>`, iterators, IDs/handles, or `std::span` for ranges.
+- Use non-owning raw pointers only when they are clearly the simplest/most efficient representation for a nullable
+    relationship, or when required by API/ABI interop.
 - Factory functions return `std::unique_ptr<Interface>`.
 - Collections own their elements: `std::vector<std::unique_ptr<ProcessImage>>` for VirtualMemory slots.
 
@@ -1145,6 +1149,9 @@ All rendering uses ANSI escape codes via `ansi.h` helpers (cursor movement, colo
 ### Memory Safety
 - **No owning raw pointers** — `std::unique_ptr` / `std::shared_ptr` everywhere
 - **No `new` / `delete`** — use `std::make_unique` / `std::make_shared`
+- Prefer references/wrappers/containers over raw pointers where possible; for optional non-owning links, prefer
+    `std::optional<std::reference_wrapper<T>>`.
+- Keep non-owning raw pointers only when needed for interoperability or a clear low-level/nullability use case.
 - **No C-style arrays for owned data** — use `std::array` or `std::vector`
 - **No C-style casts** — use `static_cast`, `dynamic_cast`, `reinterpret_cast` (sparingly)
 - **No `void*`** — use templates or `std::any` / `std::variant` when type erasure is needed
@@ -1204,7 +1211,8 @@ IncludeBlocks: Regroup
 - `[[maybe_unused]]` for intentionally unused parameters
 - `constexpr` functions for compile-time computations (ISA helpers, state transition validation)
 - Range-based `for` loops with `const auto&`
-- `std::optional` for optional values (not raw pointers)
+- `std::optional` for optional values; for optional non-owning object links, prefer
+    `std::optional<std::reference_wrapper<T>>`
 - `noexcept` on destructors, move operations, and simple getters
 - Trailing return types (`auto foo() -> ReturnType`) only when needed for `decltype`
 - `= default` / `= delete` for special member functions
