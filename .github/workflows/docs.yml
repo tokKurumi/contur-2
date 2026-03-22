@@ -1,0 +1,71 @@
+name: Generate & Publish Doxygen Docs
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+    paths:
+      - 'src/include/**'
+      - 'src/app/**'
+      - 'src/CMakeLists.txt'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-docs:
+    name: Build & Publish Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            doxygen \
+            graphviz \
+            ninja-build \
+            clang
+
+      - name: Configure CMake with Doxygen target
+        run: |
+          cmake -G Ninja -S src -B src/build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_C_COMPILER=clang \
+            -DCONTUR2_BUILD_TESTS=OFF
+
+      - name: Generate Doxygen documentation
+        run: cmake --build src/build --target docs
+
+      - name: List generated files
+        run: |
+          echo "Generated documentation structure:"
+          ls -lah src/build/html/ | head -20
+          echo "Total files:"
+          find src/build/html -type f | wc -l
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload documentation to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'src/build/html'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Print documentation URL
+        run: |
+          echo "Documentation published!"
+          echo "View at: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
