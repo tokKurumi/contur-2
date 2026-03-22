@@ -13,15 +13,21 @@ namespace contur {
 
     class ProcessImage;
 
+    /// @brief Interface for process lifecycle dispatch orchestration.
     class IDispatcher
     {
         public:
         virtual ~IDispatcher() = default;
 
         /// @brief Admits a new process into the system.
+        /// @param process Owned process image.
+        /// @param currentTick Current simulation tick.
+        /// @return Ok on success or an error code.
         [[nodiscard]] virtual Result<void> createProcess(std::unique_ptr<ProcessImage> process, Tick currentTick) = 0;
 
         /// @brief Runs one scheduling/execution dispatch cycle.
+        /// @param tickBudget Time budget for selected process.
+        /// @return Ok on success or an error code.
         [[nodiscard]] virtual Result<void> dispatch(std::size_t tickBudget) = 0;
 
         /// @brief Advances dispatcher-owned simulation time by one tick.

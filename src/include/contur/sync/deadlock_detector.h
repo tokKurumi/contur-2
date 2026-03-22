@@ -16,10 +16,16 @@ namespace contur {
     /// @brief Per-process resource vector used by Banker's safety check.
     struct ResourceAllocation
     {
+        /// @brief Process identifier for this allocation row.
         ProcessId pid = INVALID_PID;
+        /// @brief Resource vector indexed by resource type.
         std::vector<std::uint32_t> resources;
     };
 
+    /// @brief Deadlock detection/prevention helper.
+    ///
+    /// Maintains a wait-for graph for cycle detection and provides
+    /// Banker's safety check for allocation state validation.
     class DeadlockDetector
     {
         public:
@@ -32,12 +38,18 @@ namespace contur {
         DeadlockDetector &operator=(DeadlockDetector &&) noexcept;
 
         /// @brief Records successful acquisition of a resource by a process.
+        /// @param pid Process that acquired resource.
+        /// @param resource Acquired resource identifier.
         void onAcquire(ProcessId pid, ResourceId resource);
 
         /// @brief Records release of a resource by a process.
+        /// @param pid Process that released resource.
+        /// @param resource Released resource identifier.
         void onRelease(ProcessId pid, ResourceId resource);
 
         /// @brief Records waiting on a resource and updates wait-for graph.
+        /// @param pid Waiting process.
+        /// @param resource Requested resource identifier.
         void onWait(ProcessId pid, ResourceId resource);
 
         /// @brief Returns true if the current wait-for graph has a cycle.

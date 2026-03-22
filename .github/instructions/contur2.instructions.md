@@ -1403,6 +1403,67 @@ virtual ProcessId selectNext(
 ) const = 0;
 ```
 
+### Documentation Style (Doxygen)
+
+Doxygen comments are mandatory for all public APIs in `src/include/contur/`.
+Use one consistent style across all subsystems.
+
+#### Required structure for every public header
+
+1. File banner:
+
+```cpp
+/// @file scheduler.h
+/// @brief Scheduler implementation hosting pluggable scheduling policies.
+```
+
+2. Class or interface documentation:
+
+```cpp
+/// @brief Scheduler abstraction managing process state queues.
+///
+/// Coordinates ready/blocked/running process sets and delegates process
+/// ordering decisions to the active ISchedulingPolicy implementation.
+class IScheduler
+```
+
+3. Method-level tags:
+- Always include `@brief`
+- Include `@param` for each parameter
+- Include `@return` for non-void returns
+- Use `@pre`, `@post`, `@details`, `@throws` only when behavior is non-obvious
+
+#### Canonical method example
+
+```cpp
+/// @brief Selects the process to run next.
+/// @param clock Simulation clock for time-aware policy decisions.
+/// @return Selected process identifier, or error if no runnable process exists.
+[[nodiscard]] virtual Result<ProcessId> selectNext(const IClock& clock) = 0;
+```
+
+#### Consistency rules
+
+- Prefer `///` line comments in headers.
+- Keep `@brief` concise (one sentence).
+- Document API semantics and constraints, not implementation trivia.
+- Use parallel wording for similar methods across classes.
+- Do not leave public methods undocumented.
+- Preserve naming and ownership semantics in docs (`unique_ptr`, non-owning refs, etc.).
+
+#### Scope and exclusions
+
+- Mandatory: all public interfaces/classes/functions in `src/include/contur/**`.
+- Optional: private helpers, PIMPL `Impl` internals, and obvious trivial private members.
+
+#### Review checklist before merge
+
+- Header has `@file` and file-level `@brief`.
+- Each public class/interface has a `@brief` block.
+- Each public method has `@brief`; params/returns are fully tagged.
+- Docs match current behavior and error semantics (`Result<T>` paths included).
+- Terminology matches project language (process states, ticks, policies, IPC channels, etc.).
+
 ---
 
 ## Testing Strategy

@@ -11,9 +11,12 @@
 
 namespace contur {
 
+    /// @brief Multiprocessor dispatcher delegating to child dispatchers.
     class MPDispatcher final : public IDispatcher
     {
         public:
+        /// @brief Constructs MP dispatcher with worker dispatchers.
+        /// @param dispatchers Non-empty list of child dispatchers.
         explicit MPDispatcher(std::vector<std::reference_wrapper<IDispatcher>> dispatchers);
         ~MPDispatcher() override;
 
@@ -22,10 +25,19 @@ namespace contur {
         MPDispatcher(MPDispatcher &&) noexcept;
         MPDispatcher &operator=(MPDispatcher &&) noexcept;
 
+        /// @brief Routes a process to one child dispatcher.
         [[nodiscard]] Result<void> createProcess(std::unique_ptr<ProcessImage> process, Tick currentTick) override;
+
+        /// @brief Runs dispatch cycle across all child dispatchers.
         [[nodiscard]] Result<void> dispatch(std::size_t tickBudget) override;
+
+        /// @brief Ticks all child dispatchers.
         void tick() override;
+
+        /// @brief Aggregated number of processes across children.
         [[nodiscard]] std::size_t processCount() const noexcept override;
+
+        /// @brief Returns true if any child contains process pid.
         [[nodiscard]] bool hasProcess(ProcessId pid) const noexcept override;
 
         private:

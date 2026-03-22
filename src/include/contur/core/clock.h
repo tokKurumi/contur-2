@@ -23,19 +23,26 @@ namespace contur {
         virtual ~IClock() = default;
 
         /// @brief Returns the current simulation tick.
+        /// @return Monotonically increasing simulation tick value.
         [[nodiscard]] virtual Tick now() const noexcept = 0;
 
         /// @brief Advances the simulation clock by one tick.
+        /// @post A subsequent call to now() returns the previous value plus one.
         virtual void tick() = 0;
 
         /// @brief Resets the clock to tick 0.
+        /// @post now() returns 0.
         virtual void reset() = 0;
     };
 
     /// @brief Concrete simulation clock — a simple monotonic tick counter.
+    ///
+    /// Stores clock state behind a PIMPL boundary and provides the default
+    /// clock implementation used by kernel subsystems and demos.
     class SimulationClock final : public IClock
     {
         public:
+        /// @brief Constructs a new simulation clock initialized to tick 0.
         SimulationClock();
         ~SimulationClock() override;
 
@@ -47,8 +54,16 @@ namespace contur {
         SimulationClock(SimulationClock &&) noexcept;
         SimulationClock &operator=(SimulationClock &&) noexcept;
 
+        /// @brief Returns the current simulation tick.
+        /// @return Monotonically increasing simulation tick value.
         [[nodiscard]] Tick now() const noexcept override;
+
+        /// @brief Advances the simulation clock by one tick.
+        /// @post A subsequent call to now() returns the previous value plus one.
         void tick() override;
+
+        /// @brief Resets the clock to tick 0.
+        /// @post now() returns 0.
         void reset() override;
 
         private:

@@ -7,13 +7,22 @@
 
 namespace contur {
 
+    /// @brief Shortest Process Next (SPN) scheduling policy.
+    ///
+    /// Selects the ready process with the smallest predicted CPU burst.
+    /// SPN is non-preemptive.
     class SpnPolicy final : public ISchedulingPolicy
     {
         public:
+        /// @brief Policy name.
         [[nodiscard]] std::string_view name() const noexcept override;
+
+        /// @brief Selects process with minimal estimated burst.
         [[nodiscard]] ProcessId selectNext(
             const std::vector<std::reference_wrapper<const PCB>> &readyQueue, const IClock &clock
         ) const override;
+
+        /// @brief SPN does not preempt once a process is running.
         [[nodiscard]] bool shouldPreempt(const PCB &running, const PCB &candidate, const IClock &clock) const override;
     };
 

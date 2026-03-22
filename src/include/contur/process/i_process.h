@@ -28,18 +28,23 @@ namespace contur {
         virtual ~IProcess() = default;
 
         /// @brief Returns the unique process ID.
+        /// @return Stable process identifier assigned at creation time.
         [[nodiscard]] virtual ProcessId id() const noexcept = 0;
 
         /// @brief Returns the human-readable process name.
+        /// @return Non-owning view of the process name.
         [[nodiscard]] virtual std::string_view name() const noexcept = 0;
 
         /// @brief Returns the current process state.
+        /// @return Current lifecycle state of the process.
         [[nodiscard]] virtual ProcessState state() const noexcept = 0;
 
         /// @brief Returns the process priority descriptor.
+        /// @return Reference to the process priority metadata.
         [[nodiscard]] virtual const Priority &priority() const noexcept = 0;
 
         /// @brief Returns the process timing statistics.
+        /// @return Reference to process timing counters and timestamps.
         [[nodiscard]] virtual const ProcessTiming &timing() const noexcept = 0;
 
         protected:
