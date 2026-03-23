@@ -41,3 +41,11 @@ html {
     left: 7px;
     border-width: 1px;
 }
+
+#MSearchSelect {
+    pointer-events: none !important;
+}
+
+#MSearchSelect .search-icon-dropdown {
+    display: none !important;
+}
