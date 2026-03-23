@@ -1,0 +1,42 @@
+/* Sidebar-only layout tweaks for Contur docs */
+html {
+    --top-height: 88px;
+}
+
+/* Search icon sizing/alignment inside the search input. */
+#FSearchBox {
+    display: flex;
+    align-items: center;
+}
+
+#MSearchSelectExt.search-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    margin-left: 10px;
+    margin-top: 0;
+    top: 0;
+}
+
+#MSearchSelectExt.search-icon::before,
+#MSearchSelectExt.search-icon::after {
+    box-sizing: content-box;
+}
+
+#MSearchSelectExt.search-icon::before {
+    width: 5px;
+    height: 5px;
+    top: 3px;
+    left: 1px;
+    border-width: 1.4px;
+}
+
+#MSearchSelectExt.search-icon::after {
+    width: 0;
+    height: 3px;
+    top: 10px;
+    left: 7px;
+    border-width: 1px;
+}
