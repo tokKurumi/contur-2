@@ -5,8 +5,6 @@ on:
     branches:
       - main
       - master
-      - develop
-      - contur2
     paths:
       - 'src/include/**'
       - 'src/app/**'
