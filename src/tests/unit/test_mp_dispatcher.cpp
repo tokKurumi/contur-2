@@ -39,6 +39,22 @@ namespace {
             return dispatchResult_;
         }
 
+        Result<void> terminateProcess(ProcessId pid, Tick currentTick) override
+        {
+            (void)currentTick;
+            if (knownPids_.find(pid) == knownPids_.end())
+            {
+                return Result<void>::error(ErrorCode::NotFound);
+            }
+            if (terminateResult_.isError())
+            {
+                return terminateResult_;
+            }
+            knownPids_.erase(pid);
+            terminatedPids_.push_back(pid);
+            return Result<void>::ok();
+        }
+
         void tick() override
         {
             ++tickCalls_;
@@ -64,6 +80,11 @@ namespace {
             dispatchResult_ = result;
         }
 
+        void setTerminateResult(Result<void> result)
+        {
+            terminateResult_ = result;
+        }
+
         [[nodiscard]] std::size_t tickCalls() const noexcept
         {
             return tickCalls_;
@@ -79,11 +100,18 @@ namespace {
             return createdPids_;
         }
 
+        [[nodiscard]] const std::vector<ProcessId> &terminatedPids() const noexcept
+        {
+            return terminatedPids_;
+        }
+
         private:
         Result<void> createResult_ = Result<void>::ok();
         Result<void> dispatchResult_ = Result<void>::error(ErrorCode::NotFound);
+        Result<void> terminateResult_ = Result<void>::ok();
         std::set<ProcessId> knownPids_;
         std::vector<ProcessId> createdPids_;
+        std::vector<ProcessId> terminatedPids_;
         std::size_t tickCalls_ = 0;
         std::size_t lastTickBudget_ = 0;
     };
@@ -187,6 +215,34 @@ TEST(MPDispatcherTest, TickIsBroadcastToAllChildren)
 
     EXPECT_EQ(d0.tickCalls(), 2u);
     EXPECT_EQ(d1.tickCalls(), 2u);
+}
+
+TEST(MPDispatcherTest, TerminateProcessRoutesToOwningChild)
+{
+    FakeDispatcher d0;
+    FakeDispatcher d1;
+    MPDispatcher mp({std::ref(d0), std::ref(d1)});
+
+    ASSERT_TRUE(d1.createProcess(makeProcess(42), 0).isOk());
+
+    auto result = mp.terminateProcess(42, 10);
+
+    ASSERT_TRUE(result.isOk());
+    EXPECT_EQ(d1.terminatedPids().size(), 1u);
+    EXPECT_EQ(d1.terminatedPids().front(), 42u);
+    EXPECT_FALSE(d1.hasProcess(42));
+}
+
+TEST(MPDispatcherTest, TerminateProcessReturnsNotFoundForUnknownPid)
+{
+    FakeDispatcher d0;
+    FakeDispatcher d1;
+    MPDispatcher mp({std::ref(d0), std::ref(d1)});
+
+    auto result = mp.terminateProcess(777, 1);
+
+    EXPECT_TRUE(result.isError());
+    EXPECT_EQ(result.errorCode(), ErrorCode::NotFound);
 }
 
 TEST(MPDispatcherTest, ProcessCountAndHasProcessAggregateChildren)

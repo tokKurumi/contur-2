@@ -36,6 +36,9 @@ namespace contur {
         /// @brief Executes one dispatch cycle for selected process.
         [[nodiscard]] Result<void> dispatch(std::size_t tickBudget) override;
 
+        /// @brief Terminates a process and reclaims associated resources.
+        [[nodiscard]] Result<void> terminateProcess(ProcessId pid, Tick currentTick) override;
+
         /// @brief Advances dispatcher clock by one tick.
         void tick() override;
 

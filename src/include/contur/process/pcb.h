@@ -71,15 +71,11 @@ namespace contur {
         PCB(PCB &&) noexcept;
         PCB &operator=(PCB &&) noexcept;
 
-        // --- Identity ---
-
         /// @brief Returns the unique process ID.
         [[nodiscard]] ProcessId id() const noexcept;
 
         /// @brief Returns the human-readable process name.
         [[nodiscard]] std::string_view name() const noexcept;
-
-        // --- State ---
 
         /// @brief Returns the current process state.
         [[nodiscard]] ProcessState state() const noexcept;
@@ -89,8 +85,6 @@ namespace contur {
         /// @param currentTick The simulation tick at which the transition occurs.
         /// @return true if the transition was valid and applied, false otherwise.
         [[nodiscard]] bool setState(ProcessState newState, Tick currentTick = 0);
-
-        // --- Priority ---
 
         /// @brief Returns a const reference to the process priority.
         [[nodiscard]] const Priority &priority() const noexcept;
@@ -103,8 +97,6 @@ namespace contur {
 
         /// @brief Sets the nice value (clamped to valid range).
         void setNice(std::int32_t nice);
-
-        // --- Timing ---
 
         /// @brief Returns a const reference to the process timing data.
         [[nodiscard]] const ProcessTiming &timing() const noexcept;
@@ -120,8 +112,6 @@ namespace contur {
 
         /// @brief Adds the given number of ticks to the total blocked time.
         void addBlockedTime(Tick ticks);
-
-        // --- Address Info ---
 
         /// @brief Returns a const reference to the address mapping info.
         [[nodiscard]] const ProcessAddressInfo &addressInfo() const noexcept;

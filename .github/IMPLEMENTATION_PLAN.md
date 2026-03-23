@@ -291,10 +291,10 @@
 
 | # | Task | Header | Source | Test | Done |
 |---|---|---|---|---|---|
-| 10.1 | `i_kernel.h` — `IKernel` interface (createProcess, terminateProcess, syscall, enterCS, leaveCS, tick, snapshot) | `kernel/i_kernel.h` | — | — | |
-| 10.2 | `kernel.h` — `Kernel` (PIMPL; delegates to Dispatcher, IpcManager, SyscallTable, FileSystem) | `kernel/kernel.h` | `kernel/kernel.cpp` | — | |
-| 10.3 | `kernel_builder.h` — `KernelBuilder` (fluent API: withMemory, withCpu, withPolicy, withEngine, withTracer, withDevices, withFileSystem, build) | `kernel/kernel_builder.h` | `kernel/kernel_builder.cpp` | `test_kernel_builder.cpp` | |
-| 10.4 | Integration test: create kernel, create process, run to completion | — | — | `test_kernel_api.cpp` | |
+| 10.1 | `i_kernel.h` — `IKernel` interface (createProcess, terminateProcess, syscall, enterCS, leaveCS, tick, snapshot) | `kernel/i_kernel.h` | — | — | ✅ |
+| 10.2 | `kernel.h` — `Kernel` (PIMPL; delegates to Dispatcher, IpcManager, SyscallTable, FileSystem) | `kernel/kernel.h` | `kernel/kernel.cpp` | — | ✅ |
+| 10.3 | `kernel_builder.h` — `KernelBuilder` (fluent API: withMemory, withCpu, withPolicy, withEngine, withTracer, withDevices, withFileSystem, build) | `kernel/kernel_builder.h` | `kernel/kernel_builder.cpp` | `test_kernel_builder.cpp` | ✅ |
+| 10.4 | Integration test: create kernel, create process, run to completion | — | — | `test_kernel_api.cpp` | ✅ |
 
 ### Acceptance Criteria
 - KernelBuilder assembles a valid Kernel from all components

@@ -138,8 +138,6 @@ TEST(RegisterFileTest, NegativeValues)
     EXPECT_EQ(rf.get(Register::R1), -2147483648);
 }
 
-// --- Register name helper ---
-
 TEST(RegisterNameTest, AllRegistersHaveNames)
 {
     EXPECT_EQ(registerName(Register::R0), "R0");

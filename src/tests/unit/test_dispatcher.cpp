@@ -264,3 +264,23 @@ TEST_F(DispatcherTest, TickAdvancesClock)
 
     EXPECT_EQ(clock_.now(), 1u);
 }
+
+TEST_F(DispatcherTest, TerminateProcessRemovesManagedProcess)
+{
+    ASSERT_TRUE(dispatcher_.createProcess(makeProcess(6), clock_.now()).isOk());
+
+    auto result = dispatcher_.terminateProcess(6, clock_.now());
+
+    ASSERT_TRUE(result.isOk()) << static_cast<int>(result.errorCode());
+    EXPECT_FALSE(dispatcher_.hasProcess(6));
+    EXPECT_FALSE(virtualMemory_.hasSlot(6));
+    EXPECT_EQ(dispatcher_.processCount(), 0u);
+}
+
+TEST_F(DispatcherTest, TerminateProcessRejectsUnknownPid)
+{
+    auto result = dispatcher_.terminateProcess(77, clock_.now());
+
+    EXPECT_TRUE(result.isError());
+    EXPECT_EQ(result.errorCode(), ErrorCode::NotFound);
+}

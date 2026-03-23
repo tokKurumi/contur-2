@@ -59,8 +59,6 @@ namespace contur {
         ProcessImage(ProcessImage &&) noexcept;
         ProcessImage &operator=(ProcessImage &&) noexcept;
 
-        // --- Component access ---
-
         /// @brief Returns a const reference to the PCB.
         [[nodiscard]] const PCB &pcb() const noexcept;
 
@@ -72,8 +70,6 @@ namespace contur {
 
         /// @brief Returns a mutable reference to the register file.
         [[nodiscard]] RegisterFile &registers() noexcept;
-
-        // --- Code segment ---
 
         /// @brief Returns a const reference to the code segment.
         [[nodiscard]] const std::vector<Block> &code() const noexcept;
@@ -90,8 +86,6 @@ namespace contur {
         /// @brief Replaces the code segment with new code.
         /// @param newCode The replacement program.
         void setCode(std::vector<Block> newCode);
-
-        // --- Convenience accessors (delegate to PCB) ---
 
         /// @brief Returns the process ID.
         [[nodiscard]] ProcessId id() const noexcept;

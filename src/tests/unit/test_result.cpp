@@ -9,8 +9,6 @@
 
 using namespace contur;
 
-// --- Result<T> ---
-
 TEST(ResultTest, OkHoldsValue)
 {
     auto r = Result<int>::ok(42);
@@ -72,8 +70,6 @@ TEST(ResultTest, MultipleErrorCodes)
     EXPECT_EQ(r3.errorCode(), ErrorCode::InvalidInstruction);
 }
 
-// --- Result<void> ---
-
 TEST(ResultVoidTest, OkIsSuccess)
 {
     auto r = Result<void>::ok();
@@ -89,8 +85,6 @@ TEST(ResultVoidTest, ErrorHoldsCode)
     EXPECT_TRUE(r.isError());
     EXPECT_EQ(r.errorCode(), ErrorCode::PermissionDenied);
 }
-
-// --- errorCodeToString ---
 
 TEST(ErrorCodeTest, ToStringCoversAllCodes)
 {

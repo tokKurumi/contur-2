@@ -145,6 +145,29 @@ namespace contur {
         return Result<void>::error(ErrorCode::InvalidState);
     }
 
+    Result<void> Dispatcher::terminateProcess(ProcessId pid, Tick currentTick)
+    {
+        auto processIt = impl_->processes.find(pid);
+        if (processIt == impl_->processes.end())
+        {
+            return Result<void>::error(ErrorCode::NotFound);
+        }
+
+        impl_->engine.halt(pid);
+
+        auto removed = impl_->scheduler.dequeue(pid);
+        if (removed.isError() && removed.errorCode() != ErrorCode::NotFound)
+        {
+            return removed;
+        }
+
+        (void)processIt->second->pcb().setState(ProcessState::Terminated, currentTick);
+
+        (void)impl_->virtualMemory.freeSlot(pid);
+        impl_->processes.erase(processIt);
+        return Result<void>::ok();
+    }
+
     void Dispatcher::tick()
     {
         impl_->clock.tick();

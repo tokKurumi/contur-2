@@ -6,13 +6,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# --- Tracing (compile-time toggle) ---
+# Tracing (compile-time toggle)
 option(CONTUR2_ENABLE_TRACING "Enable kernel tracing (Debug only)" OFF)
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CONTUR2_ENABLE_TRACING ON CACHE BOOL "" FORCE)
 endif()
 
-# --- contur2_lib static library ---
+# contur2_lib static library
 # Collects all .cpp files under contur/ (mirrors include/contur/ headers)
 file(GLOB_RECURSE CONTUR2_LIB_SOURCES CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_SOURCE_DIR}/contur/*.cpp
@@ -47,18 +47,18 @@ else()
     endif()
 endif()
 
-# --- Subdirectories ---
+# Subdirectories
 add_subdirectory(demos)
 add_subdirectory(app)
 
-# --- Tests (optional) ---
+# Tests
 option(CONTUR2_BUILD_TESTS "Build unit and integration tests" ON)
 if(CONTUR2_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()
 
-# --- Doxygen Documentation ---
+# Doxygen Documentation
 find_package(Doxygen QUIET)
 if(DOXYGEN_FOUND)
     # Download doxygen-awesome-css theme

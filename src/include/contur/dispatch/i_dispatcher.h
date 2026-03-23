@@ -30,6 +30,12 @@ namespace contur {
         /// @return Ok on success or an error code.
         [[nodiscard]] virtual Result<void> dispatch(std::size_t tickBudget) = 0;
 
+        /// @brief Terminates a managed process immediately.
+        /// @param pid Process identifier.
+        /// @param currentTick Current simulation tick.
+        /// @return Ok on success or NotFound when process is unknown.
+        [[nodiscard]] virtual Result<void> terminateProcess(ProcessId pid, Tick currentTick) = 0;
+
         /// @brief Advances dispatcher-owned simulation time by one tick.
         virtual void tick() = 0;
 

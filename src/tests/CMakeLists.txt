@@ -8,7 +8,7 @@ FetchContent_MakeAvailable(googletest)
 
 include(GoogleTest)
 
-# --- Unit tests ---
+# Unit tests
 file(GLOB CONTUR2_UNIT_TESTS CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/*.cpp
 )
@@ -19,7 +19,7 @@ if(CONTUR2_UNIT_TESTS)
     gtest_discover_tests(contur2_unit_tests)
 endif()
 
-# --- Integration tests ---
+# Integration tests
 file(GLOB CONTUR2_INTEGRATION_TESTS CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_SOURCE_DIR}/integration/*.cpp
 )

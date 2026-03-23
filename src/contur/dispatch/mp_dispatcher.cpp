@@ -71,6 +71,19 @@ namespace contur {
         return Result<void>::error(ErrorCode::NotFound);
     }
 
+    Result<void> MPDispatcher::terminateProcess(ProcessId pid, Tick currentTick)
+    {
+        for (IDispatcher &dispatcher : impl_->dispatchers)
+        {
+            if (dispatcher.hasProcess(pid))
+            {
+                return dispatcher.terminateProcess(pid, currentTick);
+            }
+        }
+
+        return Result<void>::error(ErrorCode::NotFound);
+    }
+
     void MPDispatcher::tick()
     {
         for (IDispatcher &dispatcher : impl_->dispatchers)

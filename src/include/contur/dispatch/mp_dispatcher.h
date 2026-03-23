@@ -31,6 +31,9 @@ namespace contur {
         /// @brief Runs dispatch cycle across all child dispatchers.
         [[nodiscard]] Result<void> dispatch(std::size_t tickBudget) override;
 
+        /// @brief Terminates process in the child dispatcher that owns it.
+        [[nodiscard]] Result<void> terminateProcess(ProcessId pid, Tick currentTick) override;
+
         /// @brief Ticks all child dispatchers.
         void tick() override;
 
