@@ -2,6 +2,6 @@
     "C_Cpp.default.cppStandard": "c++20",
     "cmake.sourceDirectory": "${workspaceFolder}/src",
     "cmake.configureOnOpen": true,
-    "C_Cpp.default.compilerPath": "/usr/bin/clang++",
+    "C_Cpp.default.compilerPath": "clang++",
     "cmake.generator": "Ninja"
 }

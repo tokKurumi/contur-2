@@ -7,7 +7,7 @@
             "intelliSenseMode": "clang-x64",
             "cppStandard": "c++20",
             "cStandard": "c17",
-            "compilerPath": "/usr/bin/clang++",
+            "compilerPath": "clang++",
             "includePath": [
                 "${workspaceFolder}/src/include"
             ],
@@ -18,10 +18,10 @@
         {
             "name": "contur2-Debug (Windows)",
             "compileCommands": "${workspaceFolder}/src/build/debug/compile_commands.json",
-            "intelliSenseMode": "msvc-x64",
+            "intelliSenseMode": "clang-x64",
             "cppStandard": "c++20",
             "cStandard": "c17",
-            "compilerPath": "cl.exe",
+            "compilerPath": "clang++",
             "includePath": [
                 "${workspaceFolder}/src/include"
             ],
