@@ -20,11 +20,13 @@
                 "CMAKE_BUILD_TYPE": "Release"
             }
         },
+
         {
             "name": "debug",
             "displayName": "Debug (Clang)",
             "inherits": "base-debug",
             "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
                 "CMAKE_CXX_COMPILER": "clang++",
                 "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic -fsanitize=address,undefined",
                 "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined"
@@ -40,6 +42,7 @@
             "displayName": "Release (Clang)",
             "inherits": "base-release",
             "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
                 "CMAKE_CXX_COMPILER": "clang++",
                 "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic"
             },
@@ -66,12 +69,31 @@
             }
         },
         {
-            "name": "win-debug",
-            "displayName": "Debug (MSVC/Clang-cl)",
-            "inherits": "base-debug",
-            "generator": "Ninja",
+            "name": "gcc-release",
+            "displayName": "Release (GCC)",
+            "inherits": "base-release",
+            "binaryDir": "${sourceDir}/build/gcc-release",
             "cacheVariables": {
-                "CMAKE_CXX_FLAGS": "/W4 /EHsc /fsanitize=address"
+                "CMAKE_CXX_COMPILER": "g++",
+                "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic -fsanitize=address,undefined",
+                "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined"
+            },
+            "condition": {
+                "type": "notEquals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+
+        {
+            "name": "win-debug",
+            "displayName": "Debug (clang++)",
+            "inherits": "base-debug",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic",
+                "CMAKE_EXE_LINKER_FLAGS": ""
             },
             "condition": {
                 "type": "equals",
@@ -81,11 +103,12 @@
         },
         {
             "name": "win-release",
-            "displayName": "Release (MSVC/Clang-cl)",
+            "displayName": "Release (clang++)",
             "inherits": "base-release",
-            "generator": "Ninja",
             "cacheVariables": {
-                "CMAKE_CXX_FLAGS": "/W4 /EHsc"
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic"
             },
             "condition": {
                 "type": "equals",
@@ -94,13 +117,16 @@
             }
         }
     ],
+
     "buildPresets": [
         { "name": "debug", "configurePreset": "debug" },
         { "name": "release", "configurePreset": "release" },
         { "name": "gcc-debug", "configurePreset": "gcc-debug" },
+        { "name": "gcc-release", "configurePreset": "gcc-release" },
         { "name": "win-debug", "configurePreset": "win-debug" },
         { "name": "win-release", "configurePreset": "win-release" }
     ],
+
     "testPresets": [
         {
             "name": "debug",
@@ -108,8 +134,28 @@
             "output": { "outputOnFailure": true }
         },
         {
+            "name": "release",
+            "configurePreset": "release",
+            "output": { "outputOnFailure": true }
+        },
+        {
+            "name": "gcc-debug",
+            "configurePreset": "gcc-debug",
+            "output": { "outputOnFailure": true }
+        },
+        {
+            "name": "gcc-release",
+            "configurePreset": "gcc-release",
+            "output": { "outputOnFailure": true }
+        },
+        {
             "name": "win-debug",
             "configurePreset": "win-debug",
+            "output": { "outputOnFailure": true }
+        },
+        {
+            "name": "win-release",
+            "configurePreset": "win-release",
             "output": { "outputOnFailure": true }
         }
     ]
