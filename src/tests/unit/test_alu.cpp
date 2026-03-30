@@ -17,7 +17,7 @@ class ALUTest : public ::testing::Test
 
 TEST_F(ALUTest, AddPositive)
 {
-    auto r = alu.add(10, 21);
+    auto r = alu.add(10, 20);
     ASSERT_TRUE(r.isOk());
     EXPECT_EQ(r.value(), 30);
 }
