@@ -1,7 +1,4 @@
 /* Sidebar-only layout tweaks for Contur docs */
-html {
-    --top-height: 88px;
-}
 
 /* Search icon sizing/alignment inside the search input. */
 #FSearchBox {

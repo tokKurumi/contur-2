@@ -69,58 +69,39 @@ if(DOXYGEN_FOUND)
     )
     FetchContent_MakeAvailable(doxygen-awesome-css)
 
-    set(DOXYGEN_EXTRACT_ALL YES)
-    set(DOXYGEN_EXTRACT_PRIVATE YES)
-    set(DOXYGEN_EXTRACT_STATIC YES)
-    set(DOXYGEN_GENERATE_HTML YES)
-    set(DOXYGEN_GENERATE_TREEVIEW YES)
-    set(DOXYGEN_DISABLE_INDEX NO)
-    set(DOXYGEN_FULL_SIDEBAR NO)
-    set(DOXYGEN_PAGE_OUTLINE_PANEL NO)
-    set(DOXYGEN_HTML_COPY_CLIPBOARD NO)
-    set(DOXYGEN_HTML_OUTPUT "html")
-    set(DOXYGEN_USE_MATHJAX YES)
-    set(DOXYGEN_MATHJAX_VERSION "MathJax_3")
-    set(DOXYGEN_MATHJAX_RELPATH "https://cdn.jsdelivr.net/npm/mathjax@3/es5/")
+    # Configure docs from a base Doxyfile plus an override file.
+    set(DOXYGEN_AWESOME_DIR "${doxygen-awesome-css_SOURCE_DIR}")
+    set(CONTUR2_DOXYFILE_IN "${CMAKE_CURRENT_SOURCE_DIR}/docs/doxygen/Doxyfile.in")
+    set(CONTUR2_DOXYFILE_OVERRIDE_IN "${CMAKE_CURRENT_SOURCE_DIR}/docs/doxygen/Doxyfile.override.in")
+    set(CONTUR2_DOXYFILE "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.docs")
+    set(CONTUR2_DOXYFILE_OVERRIDE "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.override.docs")
 
-    # Doxygen Awesome CSS theme
-    set(DOXYGEN_HTML_EXTRA_STYLESHEET
-        "${doxygen-awesome-css_SOURCE_DIR}/doxygen-awesome.css"
-        "${doxygen-awesome-css_SOURCE_DIR}/doxygen-awesome-sidebar-only.css"
-        "${doxygen-awesome-css_SOURCE_DIR}/doxygen-awesome-sidebar-only-darkmode-toggle.css"
-        "${CMAKE_CURRENT_SOURCE_DIR}/docs/doxygen/doxygen-awesome-overrides.css"
-    )
-    set(DOXYGEN_HTML_EXTRA_FILES
-        "${doxygen-awesome-css_SOURCE_DIR}/doxygen-awesome-darkmode-toggle.js"
-        "${doxygen-awesome-css_SOURCE_DIR}/doxygen-awesome-fragment-copy-button.js"
-        "${doxygen-awesome-css_SOURCE_DIR}/doxygen-awesome-paragraph-link.js"
-        "${doxygen-awesome-css_SOURCE_DIR}/doxygen-awesome-interactive-toc.js"
-    )
-    set(DOXYGEN_HTML_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/docs/doxygen/header.html")
-    # Required by doxygen-awesome base theme with modern Doxygen versions.
-    set(DOXYGEN_HTML_COLORSTYLE "LIGHT")
+    if(EXISTS "${CONTUR2_DOXYFILE_OVERRIDE_IN}")
+        configure_file("${CONTUR2_DOXYFILE_OVERRIDE_IN}" "${CONTUR2_DOXYFILE_OVERRIDE}" @ONLY)
+    else()
+        file(WRITE "${CONTUR2_DOXYFILE_OVERRIDE}" "# Empty override Doxyfile\n")
+    endif()
+    configure_file("${CONTUR2_DOXYFILE_IN}" "${CONTUR2_DOXYFILE}" @ONLY)
 
-    set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "${CMAKE_CURRENT_SOURCE_DIR}/docs/doxygen/mainpage.md")
-
-    set(DOXYGEN_CREATE_SUBDIRS YES)
-    set(DOXYGEN_QUIET YES)
-    set(DOXYGEN_WARN_IF_UNDOCUMENTED NO)
-    set(DOXYGEN_SOURCE_BROWSER YES)
-
-    set(DOXYGEN_SEARCHENGINE YES)
-    set(DOXYGEN_SERVER_BASED_SEARCH NO)
-
-    doxygen_add_docs(docs
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/app
-        ${CMAKE_CURRENT_SOURCE_DIR}/docs/doxygen/mainpage.md
-        ${CMAKE_CURRENT_SOURCE_DIR}/docs/doxygen/getting_started.md
+    add_custom_target(docs
+        COMMAND ${DOXYGEN_EXECUTABLE} "${CONTUR2_DOXYFILE}"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
         COMMENT "Generating API documentation with Doxygen"
+        VERBATIM
     )
+
+    set_property(TARGET docs PROPERTY SOURCES
+        "${CMAKE_CURRENT_SOURCE_DIR}/docs/doxygen/Doxyfile.in"
+        "${CMAKE_CURRENT_SOURCE_DIR}/docs/doxygen/Doxyfile.override.in"
+        "${CMAKE_CURRENT_SOURCE_DIR}/docs/doxygen/mainpage.md"
+        "${CMAKE_CURRENT_SOURCE_DIR}/docs/doxygen/getting_started.md"
+    )
+
     message(STATUS "Doxygen documentation target 'docs' available")
     message(STATUS "  Theme: doxygen-awesome-css")
-    message(STATUS "  Main page: ${CMAKE_CURRENT_SOURCE_DIR}/docs/doxygen/mainpage.md")
-    message(STATUS "  Getting started page: ${CMAKE_CURRENT_SOURCE_DIR}/docs/doxygen/getting_started.md")
+    message(STATUS "  Base Doxyfile: ${CONTUR2_DOXYFILE_IN}")
+    message(STATUS "  Override Doxyfile: ${CONTUR2_DOXYFILE_OVERRIDE_IN}")
+    message(STATUS "  Generated Doxyfile: ${CONTUR2_DOXYFILE}")
 else()
     message(WARNING "Doxygen not found - documentation target will not be available")
 endif()

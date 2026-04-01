@@ -1,0 +1,41 @@
+#-----------------------------------------------------------------------
+# Contur 2 override Doxygen config
+#
+# This file is configured by CMake and included from Doxyfile.in.
+# Put all your project-specific documentation settings here.
+#-----------------------------------------------------------------------
+
+# Extraction / parsing
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_LOCAL_METHODS  = YES
+
+# HTML behavior
+GENERATE_TREEVIEW      = YES
+DISABLE_INDEX          = NO
+FULL_SIDEBAR           = NO
+PAGE_OUTLINE_PANEL     = NO
+HTML_COPY_CLIPBOARD    = NO
+HTML_COLORSTYLE        = LIGHT
+HTML_DYNAMIC_SECTIONS  = YES
+
+# Theme/header customization
+HTML_HEADER            = @CMAKE_CURRENT_SOURCE_DIR@/docs/doxygen/header.html
+HTML_EXTRA_STYLESHEET  = @DOXYGEN_AWESOME_DIR@/doxygen-awesome.css \
+                         @DOXYGEN_AWESOME_DIR@/doxygen-awesome-sidebar-only.css \
+                         @DOXYGEN_AWESOME_DIR@/doxygen-awesome-sidebar-only-darkmode-toggle.css \
+                         @CMAKE_CURRENT_SOURCE_DIR@/docs/doxygen/doxygen-awesome-overrides.css
+
+HTML_EXTRA_FILES       = @DOXYGEN_AWESOME_DIR@/doxygen-awesome-darkmode-toggle.js \
+                         @DOXYGEN_AWESOME_DIR@/doxygen-awesome-fragment-copy-button.js \
+                         @DOXYGEN_AWESOME_DIR@/doxygen-awesome-paragraph-link.js \
+                         @DOXYGEN_AWESOME_DIR@/doxygen-awesome-interactive-toc.js
+
+# Search/math
+SEARCHENGINE           = YES
+SERVER_BASED_SEARCH    = NO
+USE_MATHJAX            = YES
+MATHJAX_VERSION        = MathJax_3
+MATHJAX_RELPATH        = https://cdn.jsdelivr.net/npm/mathjax@3/es5/
