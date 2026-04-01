@@ -114,11 +114,13 @@ if(DOXYGEN_FOUND)
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/app
         ${CMAKE_CURRENT_SOURCE_DIR}/docs/doxygen/mainpage.md
+        ${CMAKE_CURRENT_SOURCE_DIR}/docs/doxygen/getting_started.md
         COMMENT "Generating API documentation with Doxygen"
     )
     message(STATUS "Doxygen documentation target 'docs' available")
     message(STATUS "  Theme: doxygen-awesome-css")
     message(STATUS "  Main page: ${CMAKE_CURRENT_SOURCE_DIR}/docs/doxygen/mainpage.md")
+    message(STATUS "  Getting started page: ${CMAKE_CURRENT_SOURCE_DIR}/docs/doxygen/getting_started.md")
 else()
     message(WARNING "Doxygen not found - documentation target will not be available")
 endif()

@@ -75,3 +75,11 @@ The kernel consists of several interconnected subsystems:
 ## License
 
 See [LICENSE](https://github.com/tokKurumi/contur-2/blob/main/LICENSE) file in the repository.
+
+<div class="section_buttons">
+
+|                       Getting started |
+|--------------------------------------:|
+| [Getting started](getting_started.md) |
+
+</div>
