@@ -22,6 +22,8 @@ HTML_COLORSTYLE        = LIGHT
 HTML_DYNAMIC_SECTIONS  = YES
 
 # Theme/header customization
+PROJECT_ICON           = @CMAKE_CURRENT_SOURCE_DIR@/docs/doxygen/contur.png
+PROJECT_LOGO           = @CMAKE_CURRENT_SOURCE_DIR@/docs/doxygen/contur.png
 HTML_HEADER            = @CMAKE_CURRENT_SOURCE_DIR@/docs/doxygen/header.html
 HTML_EXTRA_STYLESHEET  = @DOXYGEN_AWESOME_DIR@/doxygen-awesome.css \
                          @DOXYGEN_AWESOME_DIR@/doxygen-awesome-sidebar-only.css \

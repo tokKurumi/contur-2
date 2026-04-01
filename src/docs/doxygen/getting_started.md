@@ -130,7 +130,7 @@ ctest --preset win-release --output-on-failure ./src
 
 Tip: rebuild after editing tests so the test binaries are updated before running `ctest`.
 
-## Documentation (Doxygen)
+## Documentation
 
 You can generate API docs with the provided VSCode tasks or via CLI + CMake target `docs`.
 
