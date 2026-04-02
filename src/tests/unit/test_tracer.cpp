@@ -60,12 +60,16 @@ TEST(TracerTest, TraceMacroUsesCurrentDepth)
 
     auto events = sinkRaw->snapshot();
 
+#ifdef CONTUR_TRACE_ENABLED
     ASSERT_EQ(events.size(), 2u);
     EXPECT_EQ(events[0].depth, 0u);
     EXPECT_EQ(events[0].operation, "tick");
     EXPECT_EQ(events[1].depth, 1u);
     EXPECT_EQ(events[1].operation, "dispatch");
     EXPECT_EQ(events[1].details, "budget=4");
+#else
+    EXPECT_TRUE(events.empty());
+#endif
 }
 
 TEST(TracerTest, NullTracerRemainsNoOp)

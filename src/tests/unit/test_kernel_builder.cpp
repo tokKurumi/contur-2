@@ -426,6 +426,7 @@ TEST(KernelBuilderTest, WithTracerCapturesKernelEvents)
     ASSERT_TRUE(kernel->createProcess(makeConfig("trace-kernel")).isOk());
 
     auto events = sinkRaw->snapshot();
+#ifdef CONTUR_TRACE_ENABLED
     ASSERT_FALSE(events.empty());
 
     const bool hasCreateProcessScope = std::any_of(events.begin(), events.end(), [](const TraceEvent &event) {
@@ -438,6 +439,9 @@ TEST(KernelBuilderTest, WithTracerCapturesKernelEvents)
 
     EXPECT_TRUE(hasCreateProcessScope);
     EXPECT_TRUE(hasCreateProcessSuccess);
+#else
+    EXPECT_TRUE(events.empty());
+#endif
 }
 
 TEST(KernelBuilderTest, BuildFailsWhenDefaultTickBudgetIsZero)
