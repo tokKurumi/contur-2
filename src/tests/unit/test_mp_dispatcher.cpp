@@ -4,13 +4,14 @@
 #include <functional>
 #include <memory>
 #include <set>
-#include <stdexcept>
 #include <vector>
 
 #include <gtest/gtest.h>
 
+#include "contur/dispatch/i_dispatch_runtime.h"
 #include "contur/dispatch/i_dispatcher.h"
 #include "contur/dispatch/mp_dispatcher.h"
+#include "contur/dispatch/serial_dispatch_runtime.h"
 #include "contur/process/process_image.h"
 
 using namespace contur;
@@ -116,6 +117,77 @@ namespace {
         std::size_t lastTickBudget_ = 0;
     };
 
+    class FakeDispatchRuntime final : public IDispatchRuntime
+    {
+        public:
+        explicit FakeDispatchRuntime(HostThreadingConfig config = {})
+            : config_(config.normalized())
+        {}
+
+        [[nodiscard]] std::string_view name() const noexcept override
+        {
+            return "FakeDispatchRuntime";
+        }
+
+        [[nodiscard]] const HostThreadingConfig &config() const noexcept override
+        {
+            return config_;
+        }
+
+        [[nodiscard]] Result<void> dispatch(const DispatcherLanes &lanes, std::size_t tickBudget) override
+        {
+            ++dispatchCalls_;
+            lastLaneCount_ = lanes.size();
+            lastTickBudget_ = tickBudget;
+            return dispatchResult_;
+        }
+
+        void tick(const DispatcherLanes &lanes) override
+        {
+            ++tickCalls_;
+            lastTickLaneCount_ = lanes.size();
+        }
+
+        void setDispatchResult(Result<void> result)
+        {
+            dispatchResult_ = result;
+        }
+
+        [[nodiscard]] std::size_t dispatchCalls() const noexcept
+        {
+            return dispatchCalls_;
+        }
+
+        [[nodiscard]] std::size_t tickCalls() const noexcept
+        {
+            return tickCalls_;
+        }
+
+        [[nodiscard]] std::size_t lastLaneCount() const noexcept
+        {
+            return lastLaneCount_;
+        }
+
+        [[nodiscard]] std::size_t lastTickLaneCount() const noexcept
+        {
+            return lastTickLaneCount_;
+        }
+
+        [[nodiscard]] std::size_t lastTickBudget() const noexcept
+        {
+            return lastTickBudget_;
+        }
+
+        private:
+        HostThreadingConfig config_;
+        Result<void> dispatchResult_ = Result<void>::ok();
+        std::size_t dispatchCalls_ = 0;
+        std::size_t tickCalls_ = 0;
+        std::size_t lastLaneCount_ = 0;
+        std::size_t lastTickLaneCount_ = 0;
+        std::size_t lastTickBudget_ = 0;
+    };
+
     std::unique_ptr<ProcessImage> makeProcess(ProcessId pid)
     {
         return std::make_unique<ProcessImage>(pid, "p" + std::to_string(pid), std::vector<Block>{});
@@ -123,15 +195,22 @@ namespace {
 
 } // namespace
 
-TEST(MPDispatcherTest, ConstructorRequiresAtLeastOneDispatcher)
+TEST(MPDispatcherTest, EmptyLanesPropagateInvalidStateWithConfiguredRuntime)
 {
-    EXPECT_THROW((MPDispatcher(std::vector<std::reference_wrapper<IDispatcher>>{})), std::invalid_argument);
+    SerialDispatchRuntime runtime;
+    MPDispatcher mp({}, runtime);
+
+    auto result = mp.dispatch(11);
+
+    EXPECT_TRUE(result.isError());
+    EXPECT_EQ(result.errorCode(), ErrorCode::InvalidState);
 }
 
 TEST(MPDispatcherTest, CreateProcessRejectsNull)
 {
     FakeDispatcher child;
-    MPDispatcher mp({std::ref(child)});
+    SerialDispatchRuntime runtime;
+    MPDispatcher mp({std::ref(child)}, runtime);
 
     auto result = mp.createProcess(nullptr, 0);
 
@@ -139,12 +218,24 @@ TEST(MPDispatcherTest, CreateProcessRejectsNull)
     EXPECT_EQ(result.errorCode(), ErrorCode::InvalidArgument);
 }
 
+TEST(MPDispatcherTest, CreateProcessReturnsInvalidStateWhenNoLanes)
+{
+    SerialDispatchRuntime runtime;
+    MPDispatcher mp({}, runtime);
+
+    auto result = mp.createProcess(makeProcess(5), 0);
+
+    EXPECT_TRUE(result.isError());
+    EXPECT_EQ(result.errorCode(), ErrorCode::InvalidState);
+}
+
 TEST(MPDispatcherTest, CreateProcessRoutesByPidModulo)
 {
     FakeDispatcher d0;
     FakeDispatcher d1;
     FakeDispatcher d2;
-    MPDispatcher mp({std::ref(d0), std::ref(d1), std::ref(d2)});
+    SerialDispatchRuntime runtime;
+    MPDispatcher mp({std::ref(d0), std::ref(d1), std::ref(d2)}, runtime);
 
     ASSERT_TRUE(mp.createProcess(makeProcess(1), 0).isOk()); // -> d1
     ASSERT_TRUE(mp.createProcess(makeProcess(2), 0).isOk()); // -> d2
@@ -166,7 +257,8 @@ TEST(MPDispatcherTest, DispatchReturnsOkWhenAnyChildSucceeds)
     d0.setDispatchResult(Result<void>::error(ErrorCode::NotFound));
     d1.setDispatchResult(Result<void>::ok());
     d2.setDispatchResult(Result<void>::error(ErrorCode::InvalidState));
-    MPDispatcher mp({std::ref(d0), std::ref(d1), std::ref(d2)});
+    SerialDispatchRuntime runtime;
+    MPDispatcher mp({std::ref(d0), std::ref(d1), std::ref(d2)}, runtime);
 
     auto result = mp.dispatch(17);
 
@@ -182,7 +274,8 @@ TEST(MPDispatcherTest, DispatchReturnsFirstNonNotFoundErrorWhenNoSuccess)
     FakeDispatcher d1;
     d0.setDispatchResult(Result<void>::error(ErrorCode::InvalidState));
     d1.setDispatchResult(Result<void>::error(ErrorCode::NotFound));
-    MPDispatcher mp({std::ref(d0), std::ref(d1)});
+    SerialDispatchRuntime runtime;
+    MPDispatcher mp({std::ref(d0), std::ref(d1)}, runtime);
 
     auto result = mp.dispatch(3);
 
@@ -196,7 +289,8 @@ TEST(MPDispatcherTest, DispatchReturnsNotFoundWhenAllChildrenNotFound)
     FakeDispatcher d1;
     d0.setDispatchResult(Result<void>::error(ErrorCode::NotFound));
     d1.setDispatchResult(Result<void>::error(ErrorCode::NotFound));
-    MPDispatcher mp({std::ref(d0), std::ref(d1)});
+    SerialDispatchRuntime runtime;
+    MPDispatcher mp({std::ref(d0), std::ref(d1)}, runtime);
 
     auto result = mp.dispatch(5);
 
@@ -208,7 +302,8 @@ TEST(MPDispatcherTest, TickIsBroadcastToAllChildren)
 {
     FakeDispatcher d0;
     FakeDispatcher d1;
-    MPDispatcher mp({std::ref(d0), std::ref(d1)});
+    SerialDispatchRuntime runtime;
+    MPDispatcher mp({std::ref(d0), std::ref(d1)}, runtime);
 
     mp.tick();
     mp.tick();
@@ -217,11 +312,45 @@ TEST(MPDispatcherTest, TickIsBroadcastToAllChildren)
     EXPECT_EQ(d1.tickCalls(), 2u);
 }
 
+TEST(MPDispatcherTest, DispatchDelegatesToInjectedCustomRuntime)
+{
+    FakeDispatcher d0;
+    FakeDispatcher d1;
+    FakeDispatchRuntime runtime;
+    runtime.setDispatchResult(Result<void>::error(ErrorCode::ResourceBusy));
+    MPDispatcher mp({std::ref(d0), std::ref(d1)}, runtime);
+
+    auto result = mp.dispatch(29);
+
+    EXPECT_TRUE(result.isError());
+    EXPECT_EQ(result.errorCode(), ErrorCode::ResourceBusy);
+    EXPECT_EQ(runtime.dispatchCalls(), 1U);
+    EXPECT_EQ(runtime.lastLaneCount(), 2U);
+    EXPECT_EQ(runtime.lastTickBudget(), 29U);
+}
+
+TEST(MPDispatcherTest, TickDelegatesToInjectedCustomRuntime)
+{
+    FakeDispatcher d0;
+    FakeDispatcher d1;
+    FakeDispatchRuntime runtime;
+    MPDispatcher mp({std::ref(d0), std::ref(d1)}, runtime);
+
+    mp.tick();
+    mp.tick();
+
+    EXPECT_EQ(runtime.tickCalls(), 2U);
+    EXPECT_EQ(runtime.lastTickLaneCount(), 2U);
+    EXPECT_EQ(d0.tickCalls(), 0U);
+    EXPECT_EQ(d1.tickCalls(), 0U);
+}
+
 TEST(MPDispatcherTest, TerminateProcessRoutesToOwningChild)
 {
     FakeDispatcher d0;
     FakeDispatcher d1;
-    MPDispatcher mp({std::ref(d0), std::ref(d1)});
+    SerialDispatchRuntime runtime;
+    MPDispatcher mp({std::ref(d0), std::ref(d1)}, runtime);
 
     ASSERT_TRUE(d1.createProcess(makeProcess(42), 0).isOk());
 
@@ -237,7 +366,8 @@ TEST(MPDispatcherTest, TerminateProcessReturnsNotFoundForUnknownPid)
 {
     FakeDispatcher d0;
     FakeDispatcher d1;
-    MPDispatcher mp({std::ref(d0), std::ref(d1)});
+    SerialDispatchRuntime runtime;
+    MPDispatcher mp({std::ref(d0), std::ref(d1)}, runtime);
 
     auto result = mp.terminateProcess(777, 1);
 
@@ -249,7 +379,8 @@ TEST(MPDispatcherTest, ProcessCountAndHasProcessAggregateChildren)
 {
     FakeDispatcher d0;
     FakeDispatcher d1;
-    MPDispatcher mp({std::ref(d0), std::ref(d1)});
+    SerialDispatchRuntime runtime;
+    MPDispatcher mp({std::ref(d0), std::ref(d1)}, runtime);
 
     ASSERT_TRUE(d0.createProcess(makeProcess(10), 0).isOk());
     ASSERT_TRUE(d1.createProcess(makeProcess(11), 0).isOk());
@@ -258,4 +389,102 @@ TEST(MPDispatcherTest, ProcessCountAndHasProcessAggregateChildren)
     EXPECT_TRUE(mp.hasProcess(10));
     EXPECT_TRUE(mp.hasProcess(11));
     EXPECT_FALSE(mp.hasProcess(99));
+}
+
+TEST(DispatchRuntimeTest, FakeRuntimeExposesMetadataAndCallStats)
+{
+    FakeDispatcher d0;
+    FakeDispatcher d1;
+    DispatcherLanes lanes{std::ref(d0), std::ref(d1)};
+
+    FakeDispatchRuntime runtime({.hostThreadCount = 0, .deterministicMode = false, .workStealingEnabled = true});
+    runtime.setDispatchResult(Result<void>::error(ErrorCode::InvalidState));
+
+    auto result = runtime.dispatch(lanes, 23);
+
+    EXPECT_TRUE(result.isError());
+    EXPECT_EQ(result.errorCode(), ErrorCode::InvalidState);
+    EXPECT_EQ(runtime.name(), "FakeDispatchRuntime");
+    EXPECT_EQ(runtime.config().hostThreadCount, 1U);
+    EXPECT_TRUE(runtime.config().isSingleThreaded());
+    EXPECT_FALSE(runtime.config().workStealingEnabled);
+    EXPECT_FALSE(runtime.config().deterministicMode);
+    EXPECT_EQ(runtime.dispatchCalls(), 1U);
+    EXPECT_EQ(runtime.lastLaneCount(), 2U);
+    EXPECT_EQ(runtime.lastTickBudget(), 23U);
+
+    runtime.tick(lanes);
+    EXPECT_EQ(runtime.tickCalls(), 1U);
+    EXPECT_EQ(runtime.lastTickLaneCount(), 2U);
+}
+
+TEST(DispatchRuntimeTest, SerialRuntimeNormalizesToSingleThreadedBaseline)
+{
+    SerialDispatchRuntime runtime({.hostThreadCount = 4, .deterministicMode = false, .workStealingEnabled = true});
+
+    EXPECT_EQ(runtime.name(), "SerialDispatchRuntime");
+    EXPECT_TRUE(runtime.config().isValid());
+    EXPECT_TRUE(runtime.config().isSingleThreaded());
+    EXPECT_EQ(runtime.config().hostThreadCount, 1U);
+    EXPECT_FALSE(runtime.config().workStealingEnabled);
+    EXPECT_FALSE(runtime.config().deterministicMode);
+}
+
+TEST(DispatchRuntimeTest, SerialRuntimeDispatchReturnsInvalidStateWhenNoLanes)
+{
+    SerialDispatchRuntime runtime;
+    DispatcherLanes lanes;
+
+    auto result = runtime.dispatch(lanes, 7);
+
+    EXPECT_TRUE(result.isError());
+    EXPECT_EQ(result.errorCode(), ErrorCode::InvalidState);
+}
+
+TEST(DispatchRuntimeTest, SerialRuntimeDispatchAggregatesLaneResults)
+{
+    FakeDispatcher d0;
+    FakeDispatcher d1;
+    FakeDispatcher d2;
+    d0.setDispatchResult(Result<void>::error(ErrorCode::NotFound));
+    d1.setDispatchResult(Result<void>::ok());
+    d2.setDispatchResult(Result<void>::error(ErrorCode::InvalidState));
+    DispatcherLanes lanes{std::ref(d0), std::ref(d1), std::ref(d2)};
+    SerialDispatchRuntime runtime;
+
+    auto result = runtime.dispatch(lanes, 19);
+
+    EXPECT_TRUE(result.isOk());
+    EXPECT_EQ(d0.lastTickBudget(), 19U);
+    EXPECT_EQ(d1.lastTickBudget(), 19U);
+    EXPECT_EQ(d2.lastTickBudget(), 19U);
+}
+
+TEST(DispatchRuntimeTest, SerialRuntimeDispatchReturnsFirstNonNotFoundError)
+{
+    FakeDispatcher d0;
+    FakeDispatcher d1;
+    d0.setDispatchResult(Result<void>::error(ErrorCode::InvalidArgument));
+    d1.setDispatchResult(Result<void>::error(ErrorCode::NotFound));
+    DispatcherLanes lanes{std::ref(d0), std::ref(d1)};
+    SerialDispatchRuntime runtime;
+
+    auto result = runtime.dispatch(lanes, 5);
+
+    EXPECT_TRUE(result.isError());
+    EXPECT_EQ(result.errorCode(), ErrorCode::InvalidArgument);
+}
+
+TEST(DispatchRuntimeTest, SerialRuntimeTickBroadcastsToAllLanes)
+{
+    FakeDispatcher d0;
+    FakeDispatcher d1;
+    DispatcherLanes lanes{std::ref(d0), std::ref(d1)};
+    SerialDispatchRuntime runtime;
+
+    runtime.tick(lanes);
+    runtime.tick(lanes);
+
+    EXPECT_EQ(d0.tickCalls(), 2U);
+    EXPECT_EQ(d1.tickCalls(), 2U);
 }

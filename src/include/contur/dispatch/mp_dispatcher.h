@@ -11,13 +11,16 @@
 
 namespace contur {
 
+    class IDispatchRuntime;
+
     /// @brief Multiprocessor dispatcher delegating to child dispatchers.
     class MPDispatcher final : public IDispatcher
     {
         public:
-        /// @brief Constructs MP dispatcher with worker dispatchers.
-        /// @param dispatchers Non-empty list of child dispatchers.
-        explicit MPDispatcher(std::vector<std::reference_wrapper<IDispatcher>> dispatchers);
+        /// @brief Constructs MP dispatcher with worker dispatchers and injected runtime strategy.
+        /// @param dispatchers Dispatcher lanes used by the runtime.
+        /// @param runtime Runtime strategy injected by composition root.
+        MPDispatcher(std::vector<std::reference_wrapper<IDispatcher>> dispatchers, IDispatchRuntime &runtime);
         ~MPDispatcher() override;
 
         MPDispatcher(const MPDispatcher &) = delete;

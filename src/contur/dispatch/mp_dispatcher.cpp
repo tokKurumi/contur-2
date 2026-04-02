@@ -3,8 +3,7 @@
 
 #include "contur/dispatch/mp_dispatcher.h"
 
-#include <stdexcept>
-
+#include "contur/dispatch/i_dispatch_runtime.h"
 #include "contur/process/process_image.h"
 
 namespace contur {
@@ -12,17 +11,19 @@ namespace contur {
     struct MPDispatcher::Impl
     {
         std::vector<std::reference_wrapper<IDispatcher>> dispatchers;
+        std::reference_wrapper<IDispatchRuntime> runtime;
+
+        Impl(std::vector<std::reference_wrapper<IDispatcher>> dispatchers, IDispatchRuntime &runtime)
+            : dispatchers(std::move(dispatchers))
+            , runtime(runtime)
+        {}
     };
 
-    MPDispatcher::MPDispatcher(std::vector<std::reference_wrapper<IDispatcher>> dispatchers)
-        : impl_(std::make_unique<Impl>())
-    {
-        if (dispatchers.empty())
-        {
-            throw std::invalid_argument("MPDispatcher requires at least one dispatcher");
-        }
-        impl_->dispatchers = std::move(dispatchers);
-    }
+    MPDispatcher::MPDispatcher(
+        std::vector<std::reference_wrapper<IDispatcher>> dispatchers, IDispatchRuntime &runtime
+    )
+        : impl_(std::make_unique<Impl>(std::move(dispatchers), runtime))
+    {}
 
     MPDispatcher::~MPDispatcher() = default;
     MPDispatcher::MPDispatcher(MPDispatcher &&) noexcept = default;
@@ -34,6 +35,10 @@ namespace contur {
         {
             return Result<void>::error(ErrorCode::InvalidArgument);
         }
+        if (impl_->dispatchers.empty())
+        {
+            return Result<void>::error(ErrorCode::InvalidState);
+        }
 
         ProcessId pid = process->id();
         std::size_t target = static_cast<std::size_t>(pid) % impl_->dispatchers.size();
@@ -42,33 +47,7 @@ namespace contur {
 
     Result<void> MPDispatcher::dispatch(std::size_t tickBudget)
     {
-        bool anySuccess = false;
-        ErrorCode firstError = ErrorCode::Ok;
-
-        for (IDispatcher &dispatcher : impl_->dispatchers)
-        {
-            Result<void> result = dispatcher.dispatch(tickBudget);
-            if (result.isOk())
-            {
-                anySuccess = true;
-                continue;
-            }
-
-            if (firstError == ErrorCode::Ok && result.errorCode() != ErrorCode::NotFound)
-            {
-                firstError = result.errorCode();
-            }
-        }
-
-        if (anySuccess)
-        {
-            return Result<void>::ok();
-        }
-        if (firstError != ErrorCode::Ok)
-        {
-            return Result<void>::error(firstError);
-        }
-        return Result<void>::error(ErrorCode::NotFound);
+        return impl_->runtime.get().dispatch(impl_->dispatchers, tickBudget);
     }
 
     Result<void> MPDispatcher::terminateProcess(ProcessId pid, Tick currentTick)
@@ -86,10 +65,7 @@ namespace contur {
 
     void MPDispatcher::tick()
     {
-        for (IDispatcher &dispatcher : impl_->dispatchers)
-        {
-            dispatcher.tick();
-        }
+        impl_->runtime.get().tick(impl_->dispatchers);
     }
 
     std::size_t MPDispatcher::processCount() const noexcept
