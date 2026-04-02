@@ -19,11 +19,19 @@ namespace contur {
         /// @brief Constructs scheduler with initial policy.
         /// @param policy Initial scheduling policy. Null policy leaves scheduler unconfigured.
         explicit Scheduler(std::unique_ptr<ISchedulingPolicy> policy);
+
+        /// @brief Destroys scheduler.
         ~Scheduler() override;
 
+        /// @brief Copy construction is disabled.
         Scheduler(const Scheduler &) = delete;
+
+        /// @brief Copy assignment is disabled.
         Scheduler &operator=(const Scheduler &) = delete;
+        /// @brief Move-constructs scheduler state.
         Scheduler(Scheduler &&) noexcept;
+
+        /// @brief Move-assigns scheduler state.
         Scheduler &operator=(Scheduler &&) noexcept;
 
         /// @brief Enqueues process into ready queue.

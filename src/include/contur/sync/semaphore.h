@@ -17,11 +17,19 @@ namespace contur {
         public:
         /// @brief Constructs semaphore with initial and maximum count.
         explicit Semaphore(std::size_t initialCount = 1, std::size_t maxCount = 1);
+
+        /// @brief Destroys semaphore.
         ~Semaphore() override;
 
+        /// @brief Copy construction is disabled.
         Semaphore(const Semaphore &) = delete;
+
+        /// @brief Copy assignment is disabled.
         Semaphore &operator=(const Semaphore &) = delete;
+        /// @brief Move-constructs semaphore state.
         Semaphore(Semaphore &&) noexcept;
+
+        /// @brief Move-assigns semaphore state.
         Semaphore &operator=(Semaphore &&) noexcept;
 
         /// @brief Acquires one semaphore unit.

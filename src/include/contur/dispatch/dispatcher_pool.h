@@ -24,11 +24,19 @@ namespace contur {
         /// @brief Constructs a worker pool runtime.
         /// @param config Runtime threading config owned and normalized by the runtime.
         explicit DispatcherPool(HostThreadingConfig config = {});
+
+        /// @brief Destroys pool runtime and joins worker threads.
         ~DispatcherPool() override;
 
+        /// @brief Copy construction is disabled.
         DispatcherPool(const DispatcherPool &) = delete;
+
+        /// @brief Copy assignment is disabled.
         DispatcherPool &operator=(const DispatcherPool &) = delete;
+        /// @brief Move-constructs pool runtime state.
         DispatcherPool(DispatcherPool &&) noexcept;
+
+        /// @brief Move-assigns pool runtime state.
         DispatcherPool &operator=(DispatcherPool &&) noexcept;
 
         /// @brief Returns runtime implementation name.

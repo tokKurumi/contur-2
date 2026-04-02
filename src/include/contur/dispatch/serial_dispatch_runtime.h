@@ -16,11 +16,19 @@ namespace contur {
         /// @brief Constructs serial runtime with runtime-owned config.
         /// @param config Runtime threading config (normalized to serial-safe invariants).
         explicit SerialDispatchRuntime(HostThreadingConfig config = {});
+
+        /// @brief Destroys serial runtime.
         ~SerialDispatchRuntime() override;
 
+        /// @brief Copy construction is disabled.
         SerialDispatchRuntime(const SerialDispatchRuntime &) = delete;
+
+        /// @brief Copy assignment is disabled.
         SerialDispatchRuntime &operator=(const SerialDispatchRuntime &) = delete;
+        /// @brief Move-constructs serial runtime state.
         SerialDispatchRuntime(SerialDispatchRuntime &&) noexcept;
+
+        /// @brief Move-assigns serial runtime state.
         SerialDispatchRuntime &operator=(SerialDispatchRuntime &&) noexcept;
 
         /// @brief Returns runtime implementation name.

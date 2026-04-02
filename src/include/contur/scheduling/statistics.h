@@ -13,12 +13,22 @@ namespace contur {
     class Statistics
     {
         public:
+        /// @brief Constructs statistics store.
+        /// @param alpha EWMA smoothing coefficient in range (0, 1].
         explicit Statistics(double alpha = 0.5);
+
+        /// @brief Destroys statistics store.
         ~Statistics();
 
+        /// @brief Copy construction is disabled.
         Statistics(const Statistics &) = delete;
+
+        /// @brief Copy assignment is disabled.
         Statistics &operator=(const Statistics &) = delete;
+        /// @brief Move-constructs statistics state.
         Statistics(Statistics &&) noexcept;
+
+        /// @brief Move-assigns statistics state.
         Statistics &operator=(Statistics &&) noexcept;
 
         /// @brief Records an observed CPU burst for the process.

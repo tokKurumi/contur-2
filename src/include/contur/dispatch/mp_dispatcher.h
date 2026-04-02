@@ -21,11 +21,19 @@ namespace contur {
         /// @param dispatchers Dispatcher lanes used by the runtime.
         /// @param runtime Runtime strategy injected by composition root.
         MPDispatcher(std::vector<std::reference_wrapper<IDispatcher>> dispatchers, IDispatchRuntime &runtime);
+
+        /// @brief Destroys MP dispatcher.
         ~MPDispatcher() override;
 
+        /// @brief Copy construction is disabled.
         MPDispatcher(const MPDispatcher &) = delete;
+
+        /// @brief Copy assignment is disabled.
         MPDispatcher &operator=(const MPDispatcher &) = delete;
+        /// @brief Move-constructs MP dispatcher state.
         MPDispatcher(MPDispatcher &&) noexcept;
+
+        /// @brief Move-assigns MP dispatcher state.
         MPDispatcher &operator=(MPDispatcher &&) noexcept;
 
         /// @brief Routes a process to one child dispatcher.

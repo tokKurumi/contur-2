@@ -18,11 +18,19 @@ namespace contur {
         public:
         /// @brief Constructs an unlocked mutex.
         Mutex();
+
+        /// @brief Destroys mutex.
         ~Mutex() override;
 
+        /// @brief Copy construction is disabled.
         Mutex(const Mutex &) = delete;
+
+        /// @brief Copy assignment is disabled.
         Mutex &operator=(const Mutex &) = delete;
+        /// @brief Move-constructs mutex state.
         Mutex(Mutex &&) noexcept;
+
+        /// @brief Move-assigns mutex state.
         Mutex &operator=(Mutex &&) noexcept;
 
         /// @brief Acquires the mutex for process pid.

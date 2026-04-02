@@ -30,12 +30,21 @@ namespace contur {
     class DeadlockDetector
     {
         public:
+        /// @brief Constructs deadlock detector with empty graphs.
         DeadlockDetector();
+
+        /// @brief Destroys deadlock detector.
         ~DeadlockDetector();
 
+        /// @brief Copy construction is disabled.
         DeadlockDetector(const DeadlockDetector &) = delete;
+
+        /// @brief Copy assignment is disabled.
         DeadlockDetector &operator=(const DeadlockDetector &) = delete;
+        /// @brief Move-constructs detector state.
         DeadlockDetector(DeadlockDetector &&) noexcept;
+
+        /// @brief Move-assigns detector state.
         DeadlockDetector &operator=(DeadlockDetector &&) noexcept;
 
         /// @brief Records successful acquisition of a resource by a process.
@@ -85,6 +94,10 @@ namespace contur {
         /// `current[i].resources[r]` is currently allocated count for process i, resource r.
         /// `maximum[i].resources[r]` is maximum demand for process i, resource r.
         /// `available[r]` is currently available count for resource r.
+        /// @param current Currently allocated resources per process.
+        /// @param maximum Maximum claims per process.
+        /// @param available Currently available resource vector.
+        /// @return True when the state is safe; false otherwise.
         [[nodiscard]] bool isSafeState(
             const std::vector<ResourceAllocation> &current,
             const std::vector<ResourceAllocation> &maximum,

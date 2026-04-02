@@ -23,11 +23,19 @@ namespace contur {
         public:
         /// @brief Constructs dispatcher from subsystem references.
         Dispatcher(IScheduler &scheduler, IExecutionEngine &engine, IVirtualMemory &virtualMemory, IClock &clock);
+
+        /// @brief Destroys dispatcher.
         ~Dispatcher() override;
 
+        /// @brief Copy construction is disabled.
         Dispatcher(const Dispatcher &) = delete;
+
+        /// @brief Copy assignment is disabled.
         Dispatcher &operator=(const Dispatcher &) = delete;
+        /// @brief Move-constructs dispatcher state.
         Dispatcher(Dispatcher &&) noexcept;
+
+        /// @brief Move-assigns dispatcher state.
         Dispatcher &operator=(Dispatcher &&) noexcept;
 
         /// @brief Admits process and initializes memory/scheduler state.

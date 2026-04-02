@@ -16,11 +16,19 @@ namespace contur {
         /// @brief Constructs a critical section using provided primitive.
         /// @details If primitive is null, an internal Mutex is used.
         explicit CriticalSection(std::unique_ptr<ISyncPrimitive> primitive = nullptr);
+
+        /// @brief Destroys critical-section adapter.
         ~CriticalSection() override;
 
+        /// @brief Copy construction is disabled.
         CriticalSection(const CriticalSection &) = delete;
+
+        /// @brief Copy assignment is disabled.
         CriticalSection &operator=(const CriticalSection &) = delete;
+        /// @brief Move-constructs critical section state.
         CriticalSection(CriticalSection &&) noexcept;
+
+        /// @brief Move-assigns critical section state.
         CriticalSection &operator=(CriticalSection &&) noexcept;
 
         /// @brief Acquires underlying primitive.
