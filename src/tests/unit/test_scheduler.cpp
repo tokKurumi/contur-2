@@ -9,13 +9,15 @@
 #include "contur/process/state.h"
 #include "contur/scheduling/fcfs_policy.h"
 #include "contur/scheduling/scheduler.h"
+#include "contur/tracing/null_tracer.h"
 
 using namespace contur;
 
 TEST(SchedulerTest, EnqueueAndSelectMovesProcessToRunning)
 {
     SimulationClock clock;
-    Scheduler scheduler(std::make_unique<FcfsPolicy>());
+    NullTracer tracer(clock);
+    Scheduler scheduler(std::make_unique<FcfsPolicy>(), tracer);
 
     PCB p1(1, "p1");
     ASSERT_TRUE(scheduler.enqueue(p1, 1).isOk());
@@ -32,7 +34,8 @@ TEST(SchedulerTest, EnqueueAndSelectMovesProcessToRunning)
 TEST(SchedulerTest, BlockAndUnblockTransitions)
 {
     SimulationClock clock;
-    Scheduler scheduler(std::make_unique<FcfsPolicy>());
+    NullTracer tracer(clock);
+    Scheduler scheduler(std::make_unique<FcfsPolicy>(), tracer);
 
     PCB p1(1, "p1");
     ASSERT_TRUE(scheduler.enqueue(p1, 0).isOk());
@@ -50,7 +53,8 @@ TEST(SchedulerTest, BlockAndUnblockTransitions)
 TEST(SchedulerTest, TerminateRunningProcess)
 {
     SimulationClock clock;
-    Scheduler scheduler(std::make_unique<FcfsPolicy>());
+    NullTracer tracer(clock);
+    Scheduler scheduler(std::make_unique<FcfsPolicy>(), tracer);
 
     PCB p1(1, "p1");
     ASSERT_TRUE(scheduler.enqueue(p1, 0).isOk());
@@ -64,7 +68,8 @@ TEST(SchedulerTest, TerminateRunningProcess)
 TEST(SchedulerTest, NullPolicyReturnsInvalidStateInsteadOfThrow)
 {
     SimulationClock clock;
-    Scheduler scheduler(nullptr);
+    NullTracer tracer(clock);
+    Scheduler scheduler(nullptr, tracer);
 
     PCB p1(1, "p1");
     ASSERT_TRUE(scheduler.enqueue(p1, 0).isOk());
@@ -78,7 +83,9 @@ TEST(SchedulerTest, NullPolicyReturnsInvalidStateInsteadOfThrow)
 
 TEST(SchedulerTest, SetPolicyRejectsNullWithInvalidState)
 {
-    Scheduler scheduler(std::make_unique<FcfsPolicy>());
+    SimulationClock clock;
+    NullTracer tracer(clock);
+    Scheduler scheduler(std::make_unique<FcfsPolicy>(), tracer);
 
     auto result = scheduler.setPolicy(nullptr);
 

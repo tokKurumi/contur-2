@@ -12,6 +12,7 @@ namespace contur {
     class IClock;
     class IExecutionEngine;
     class IScheduler;
+    class ITracer;
     class IVirtualMemory;
 
     /// @brief Uniprocessor dispatcher implementation.
@@ -22,7 +23,13 @@ namespace contur {
     {
         public:
         /// @brief Constructs dispatcher from subsystem references.
-        Dispatcher(IScheduler &scheduler, IExecutionEngine &engine, IVirtualMemory &virtualMemory, IClock &clock);
+        Dispatcher(
+            IScheduler &scheduler,
+            IExecutionEngine &engine,
+            IVirtualMemory &virtualMemory,
+            IClock &clock,
+            ITracer &tracer
+        );
 
         /// @brief Destroys dispatcher.
         ~Dispatcher() override;

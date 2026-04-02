@@ -3,10 +3,12 @@
 
 #include <gtest/gtest.h>
 
+#include "contur/core/clock.h"
 #include "contur/memory/fifo_replacement.h"
 #include "contur/memory/mmu.h"
 #include "contur/memory/physical_memory.h"
 #include "contur/memory/virtual_memory.h"
+#include "contur/tracing/null_tracer.h"
 
 using namespace contur;
 
@@ -16,8 +18,10 @@ class VirtualMemoryTest : public ::testing::Test
     static constexpr std::size_t MEM_SIZE = 32;
     static constexpr std::size_t MAX_SLOTS = 8;
 
+    SimulationClock clock{};
+    NullTracer tracer{clock};
     PhysicalMemory memory{MEM_SIZE};
-    Mmu mmu{memory, std::make_unique<FifoReplacement>()};
+    Mmu mmu{memory, std::make_unique<FifoReplacement>(), tracer};
     VirtualMemory vm{mmu, MAX_SLOTS};
 };
 

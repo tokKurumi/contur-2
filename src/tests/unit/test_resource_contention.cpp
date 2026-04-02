@@ -25,6 +25,7 @@
 
 #include <gtest/gtest.h>
 
+#include "contur/core/clock.h"
 #include "contur/arch/instruction.h"
 #include "contur/io/device_manager.h"
 #include "contur/io/network_device.h"
@@ -34,6 +35,7 @@
 #include "contur/memory/mmu.h"
 #include "contur/memory/page_table.h"
 #include "contur/memory/physical_memory.h"
+#include "contur/tracing/null_tracer.h"
 
 using namespace contur;
 
@@ -84,8 +86,10 @@ TEST(ResourceContentionTest, PageTableConcurrentMapTranslateUnmapIsStable)
 // A race here indicates a missing read lock or an unguarded frame/page update.
 TEST(ResourceContentionTest, MmuConcurrentReadWriteIsSerialized)
 {
+    SimulationClock clock;
+    NullTracer tracer(clock);
     PhysicalMemory memory(128);
-    Mmu mmu(memory, std::make_unique<FifoReplacement>());
+    Mmu mmu(memory, std::make_unique<FifoReplacement>(), tracer);
 
     auto allocated = mmu.allocate(1, 8);
     ASSERT_TRUE(allocated.isOk());

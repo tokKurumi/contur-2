@@ -129,7 +129,9 @@ namespace contur {
 
         if (config.code.empty())
         {
-            CONTUR_TRACE(*impl_->tracer, "Kernel", "createProcess.error", errorCodeToString(ErrorCode::InvalidArgument));
+            CONTUR_TRACE(
+                *impl_->tracer, "Kernel", "createProcess.error", errorCodeToString(ErrorCode::InvalidArgument)
+            );
             return Result<ProcessId>::error(ErrorCode::InvalidArgument);
         }
 
@@ -139,7 +141,9 @@ namespace contur {
             pid = impl_->allocatePid();
             if (pid == INVALID_PID)
             {
-                CONTUR_TRACE(*impl_->tracer, "Kernel", "createProcess.error", errorCodeToString(ErrorCode::OutOfMemory));
+                CONTUR_TRACE(
+                    *impl_->tracer, "Kernel", "createProcess.error", errorCodeToString(ErrorCode::OutOfMemory)
+                );
                 return Result<ProcessId>::error(ErrorCode::OutOfMemory);
             }
         }

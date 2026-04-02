@@ -12,6 +12,7 @@ namespace contur {
 
     // Forward declarations
     class IMemory;
+    class ITracer;
 
     /// @brief Concrete Memory Management Unit implementation.
     ///
@@ -27,7 +28,7 @@ namespace contur {
         /// @brief Constructs an MMU backed by the given physical memory.
         /// @param memory The physical memory to manage (non-owning reference).
         /// @param replacementPolicy The page replacement policy to use.
-        explicit Mmu(IMemory &memory, std::unique_ptr<IPageReplacementPolicy> replacementPolicy);
+        explicit Mmu(IMemory &memory, std::unique_ptr<IPageReplacementPolicy> replacementPolicy, ITracer &tracer);
 
         /// @brief Destroys MMU and associated paging state.
         ~Mmu() override;

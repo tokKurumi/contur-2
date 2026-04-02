@@ -3,9 +3,11 @@
 
 #include <gtest/gtest.h>
 
+#include "contur/core/clock.h"
 #include "contur/memory/fifo_replacement.h"
 #include "contur/memory/mmu.h"
 #include "contur/memory/physical_memory.h"
+#include "contur/tracing/null_tracer.h"
 
 using namespace contur;
 
@@ -14,11 +16,13 @@ class MmuTest : public ::testing::Test
     protected:
     static constexpr std::size_t MEM_SIZE = 16;
 
+    SimulationClock clock{};
+    NullTracer tracer{clock};
     PhysicalMemory memory{MEM_SIZE};
 
     std::unique_ptr<Mmu> createMmu()
     {
-        return std::make_unique<Mmu>(memory, std::make_unique<FifoReplacement>());
+        return std::make_unique<Mmu>(memory, std::make_unique<FifoReplacement>(), tracer);
     }
 };
 

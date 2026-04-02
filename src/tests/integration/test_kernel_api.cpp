@@ -155,7 +155,7 @@ namespace {
         auto clock = std::make_unique<SimulationClock>();
         auto tracer = std::make_unique<NullTracer>(*clock);
         auto memory = std::make_unique<PhysicalMemory>(256);
-        auto mmu = std::make_unique<Mmu>(*memory, std::make_unique<FifoReplacement>());
+        auto mmu = std::make_unique<Mmu>(*memory, std::make_unique<FifoReplacement>(), *tracer);
         auto virtualMemory = std::make_unique<VirtualMemory>(*mmu, MAX_PROCESSES);
         auto cpu = std::make_unique<Cpu>(*memory);
 
@@ -169,10 +169,10 @@ namespace {
             schedulingPolicy = std::make_unique<RoundRobinPolicy>(defaultTickBudget);
         }
 
-        auto scheduler = std::make_unique<Scheduler>(std::move(schedulingPolicy));
+        auto scheduler = std::make_unique<Scheduler>(std::move(schedulingPolicy), *tracer);
         if (!dispatcher)
         {
-            dispatcher = std::make_unique<Dispatcher>(*scheduler, *executionEngine, *virtualMemory, *clock);
+            dispatcher = std::make_unique<Dispatcher>(*scheduler, *executionEngine, *virtualMemory, *clock, *tracer);
         }
 
         return KernelBuilder()

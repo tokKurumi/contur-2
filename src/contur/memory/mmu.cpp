@@ -4,12 +4,16 @@
 #include "contur/memory/mmu.h"
 
 #include <mutex>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
+#include "contur/core/clock.h"
 #include "contur/memory/i_memory.h"
 #include "contur/memory/page_table.h"
+#include "contur/tracing/i_tracer.h"
+#include "contur/tracing/trace_scope.h"
 
 namespace contur {
 
@@ -17,6 +21,7 @@ namespace contur {
     {
         IMemory &memory;
         std::unique_ptr<IPageReplacementPolicy> replacementPolicy;
+        ITracer &tracer;
         mutable std::mutex mutex;
 
         /// Per-process page tables
@@ -53,9 +58,10 @@ namespace contur {
 
         std::size_t totalFrameCount;
 
-        Impl(IMemory &mem, std::unique_ptr<IPageReplacementPolicy> policy)
+        Impl(IMemory &mem, std::unique_ptr<IPageReplacementPolicy> policy, ITracer &tracer)
             : memory(mem)
             , replacementPolicy(std::move(policy))
+            , tracer(tracer)
             , totalFrameCount(mem.size())
         {
             // Initialize all frames as free
@@ -85,8 +91,8 @@ namespace contur {
         }
     };
 
-    Mmu::Mmu(IMemory &memory, std::unique_ptr<IPageReplacementPolicy> replacementPolicy)
-        : impl_(std::make_unique<Impl>(memory, std::move(replacementPolicy)))
+    Mmu::Mmu(IMemory &memory, std::unique_ptr<IPageReplacementPolicy> replacementPolicy, ITracer &tracer)
+        : impl_(std::make_unique<Impl>(memory, std::move(replacementPolicy), tracer))
     {}
 
     Mmu::~Mmu() = default;
@@ -145,8 +151,19 @@ namespace contur {
     Result<MemoryAddress> Mmu::allocate(ProcessId processId, std::size_t pageCount)
     {
         std::lock_guard<std::mutex> lock(impl_->mutex);
+        CONTUR_TRACE_SCOPE(impl_->tracer, "MMU", "allocate");
+        CONTUR_TRACE(
+            impl_->tracer,
+            "MMU",
+            "allocate.request",
+            std::string("pid=") + std::to_string(processId) + ", pages=" + std::to_string(pageCount)
+        );
+
         if (pageCount == 0)
         {
+            CONTUR_TRACE_L(
+                impl_->tracer, TraceLevel::Warn, "MMU", "allocate.error", errorCodeToString(ErrorCode::InvalidAddress)
+            );
             return Result<MemoryAddress>::error(ErrorCode::InvalidAddress);
         }
 
@@ -156,6 +173,9 @@ namespace contur {
         {
             // Process already has allocations — could extend, but for simplicity
             // we treat this as an error (reallocate after deallocate)
+            CONTUR_TRACE_L(
+                impl_->tracer, TraceLevel::Warn, "MMU", "allocate.error", errorCodeToString(ErrorCode::InvalidPid)
+            );
             return Result<MemoryAddress>::error(ErrorCode::InvalidPid);
         }
 
@@ -179,6 +199,13 @@ namespace contur {
                         }
                     }
                     impl_->pageTables.erase(it);
+                    CONTUR_TRACE_L(
+                        impl_->tracer,
+                        TraceLevel::Error,
+                        "MMU",
+                        "allocate.error",
+                        errorCodeToString(ErrorCode::OutOfMemory)
+                    );
                     return Result<MemoryAddress>::error(ErrorCode::OutOfMemory);
                 }
                 // Evict the previous owner's page
@@ -210,15 +237,22 @@ namespace contur {
         }
 
         // Return virtual address 0 as the starting address
+        CONTUR_TRACE(impl_->tracer, "MMU", "allocate.ok", std::string("pid=") + std::to_string(processId));
         return Result<MemoryAddress>::ok(0);
     }
 
     Result<void> Mmu::deallocate(ProcessId processId)
     {
         std::lock_guard<std::mutex> lock(impl_->mutex);
+        CONTUR_TRACE_SCOPE(impl_->tracer, "MMU", "deallocate");
+        CONTUR_TRACE(impl_->tracer, "MMU", "deallocate.request", std::string("pid=") + std::to_string(processId));
+
         auto it = impl_->pageTables.find(processId);
         if (it == impl_->pageTables.end())
         {
+            CONTUR_TRACE_L(
+                impl_->tracer, TraceLevel::Warn, "MMU", "deallocate.error", errorCodeToString(ErrorCode::InvalidPid)
+            );
             return Result<void>::error(ErrorCode::InvalidPid);
         }
 
@@ -246,15 +280,27 @@ namespace contur {
         }
 
         impl_->pageTables.erase(it);
+        CONTUR_TRACE(impl_->tracer, "MMU", "deallocate.ok", std::string("pid=") + std::to_string(processId));
         return Result<void>::ok();
     }
 
     Result<void> Mmu::swapIn(ProcessId processId, MemoryAddress virtualAddress)
     {
         std::lock_guard<std::mutex> lock(impl_->mutex);
+        CONTUR_TRACE_SCOPE(impl_->tracer, "MMU", "swapIn");
+        CONTUR_TRACE(
+            impl_->tracer,
+            "MMU",
+            "swapIn.request",
+            std::string("pid=") + std::to_string(processId) + ", vaddr=" + std::to_string(virtualAddress)
+        );
+
         auto tableIt = impl_->pageTables.find(processId);
         if (tableIt == impl_->pageTables.end())
         {
+            CONTUR_TRACE_L(
+                impl_->tracer, TraceLevel::Warn, "MMU", "swapIn.error", errorCodeToString(ErrorCode::InvalidPid)
+            );
             return Result<void>::error(ErrorCode::InvalidPid);
         }
 
@@ -262,6 +308,9 @@ namespace contur {
         auto entry = tableIt->second.getEntry(virtualPage);
         if (entry.isError())
         {
+            CONTUR_TRACE_L(
+                impl_->tracer, TraceLevel::Warn, "MMU", "swapIn.error", errorCodeToString(entry.errorCode())
+            );
             return Result<void>::error(entry.errorCode());
         }
 
@@ -279,6 +328,9 @@ namespace contur {
             frame = impl_->replacementPolicy->selectVictim(tableIt->second);
             if (frame == INVALID_FRAME)
             {
+                CONTUR_TRACE_L(
+                    impl_->tracer, TraceLevel::Error, "MMU", "swapIn.error", errorCodeToString(ErrorCode::OutOfMemory)
+                );
                 return Result<void>::error(ErrorCode::OutOfMemory);
             }
 
@@ -314,15 +366,27 @@ namespace contur {
 
         (void)tableIt->second.map(virtualPage, frame);
         impl_->replacementPolicy->onLoad(frame);
+        CONTUR_TRACE(impl_->tracer, "MMU", "swapIn.ok", std::string("frame=") + std::to_string(frame));
         return Result<void>::ok();
     }
 
     Result<void> Mmu::swapOut(ProcessId processId, MemoryAddress virtualAddress)
     {
         std::lock_guard<std::mutex> lock(impl_->mutex);
+        CONTUR_TRACE_SCOPE(impl_->tracer, "MMU", "swapOut");
+        CONTUR_TRACE(
+            impl_->tracer,
+            "MMU",
+            "swapOut.request",
+            std::string("pid=") + std::to_string(processId) + ", vaddr=" + std::to_string(virtualAddress)
+        );
+
         auto tableIt = impl_->pageTables.find(processId);
         if (tableIt == impl_->pageTables.end())
         {
+            CONTUR_TRACE_L(
+                impl_->tracer, TraceLevel::Warn, "MMU", "swapOut.error", errorCodeToString(ErrorCode::InvalidPid)
+            );
             return Result<void>::error(ErrorCode::InvalidPid);
         }
 
@@ -330,6 +394,9 @@ namespace contur {
         auto entry = tableIt->second.getEntry(virtualPage);
         if (entry.isError())
         {
+            CONTUR_TRACE_L(
+                impl_->tracer, TraceLevel::Warn, "MMU", "swapOut.error", errorCodeToString(entry.errorCode())
+            );
             return Result<void>::error(entry.errorCode());
         }
 
@@ -351,6 +418,8 @@ namespace contur {
         // Unmap and free the frame
         (void)tableIt->second.unmap(virtualPage);
         impl_->freeFrame(frame);
+
+        CONTUR_TRACE(impl_->tracer, "MMU", "swapOut.ok", std::string("frame=") + std::to_string(frame));
 
         return Result<void>::ok();
     }

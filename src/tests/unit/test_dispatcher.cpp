@@ -22,6 +22,7 @@
 #include "contur/scheduling/fcfs_policy.h"
 #include "contur/scheduling/i_scheduling_policy.h"
 #include "contur/scheduling/scheduler.h"
+#include "contur/tracing/null_tracer.h"
 
 using namespace contur;
 
@@ -123,13 +124,14 @@ namespace {
 class DispatcherTest : public ::testing::Test
 {
     protected:
-    PhysicalMemory memory_{256};
-    Mmu mmu_{memory_, std::make_unique<FifoReplacement>()};
-    VirtualMemory virtualMemory_{mmu_, 16};
     SimulationClock clock_;
-    Scheduler scheduler_{std::make_unique<FcfsPolicy>()};
+    NullTracer tracer_{clock_};
+    PhysicalMemory memory_{256};
+    Mmu mmu_{memory_, std::make_unique<FifoReplacement>(), tracer_};
+    VirtualMemory virtualMemory_{mmu_, 16};
+    Scheduler scheduler_{std::make_unique<FcfsPolicy>(), tracer_};
     FakeExecutionEngine engine_;
-    Dispatcher dispatcher_{scheduler_, engine_, virtualMemory_, clock_};
+    Dispatcher dispatcher_{scheduler_, engine_, virtualMemory_, clock_, tracer_};
 };
 
 TEST_F(DispatcherTest, CreateProcessRejectsNull)

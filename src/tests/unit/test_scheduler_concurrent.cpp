@@ -14,12 +14,15 @@
 #include "contur/process/pcb.h"
 #include "contur/scheduling/fcfs_policy.h"
 #include "contur/scheduling/scheduler.h"
+#include "contur/tracing/null_tracer.h"
 
 using namespace contur;
 
 TEST(SchedulerConcurrentTest, ConfigureLanesValidatesArgumentsAndState)
 {
-    Scheduler scheduler(std::make_unique<FcfsPolicy>());
+    SimulationClock clock;
+    NullTracer tracer(clock);
+    Scheduler scheduler(std::make_unique<FcfsPolicy>(), tracer);
 
     auto zero = scheduler.configureLanes(0);
     ASSERT_TRUE(zero.isError());
@@ -35,7 +38,9 @@ TEST(SchedulerConcurrentTest, ConfigureLanesValidatesArgumentsAndState)
 
 TEST(SchedulerConcurrentTest, EnqueueToLaneCreatesIndependentPerLaneQueues)
 {
-    Scheduler scheduler(std::make_unique<FcfsPolicy>());
+    SimulationClock clock;
+    NullTracer tracer(clock);
+    Scheduler scheduler(std::make_unique<FcfsPolicy>(), tracer);
     ASSERT_TRUE(scheduler.configureLanes(3).isOk());
 
     PCB p1(1, "p1");
@@ -59,7 +64,8 @@ TEST(SchedulerConcurrentTest, EnqueueToLaneCreatesIndependentPerLaneQueues)
 TEST(SchedulerConcurrentTest, SelectNextForLaneTracksMultipleRunningProcesses)
 {
     SimulationClock clock;
-    Scheduler scheduler(std::make_unique<FcfsPolicy>());
+    NullTracer tracer(clock);
+    Scheduler scheduler(std::make_unique<FcfsPolicy>(), tracer);
     ASSERT_TRUE(scheduler.configureLanes(2).isOk());
 
     PCB p1(1, "p1");
@@ -86,7 +92,8 @@ TEST(SchedulerConcurrentTest, SelectNextForLaneTracksMultipleRunningProcesses)
 TEST(SchedulerConcurrentTest, StealMovesWorkToThiefLaneAndMaintainsUniqueness)
 {
     SimulationClock clock;
-    Scheduler scheduler(std::make_unique<FcfsPolicy>());
+    NullTracer tracer(clock);
+    Scheduler scheduler(std::make_unique<FcfsPolicy>(), tracer);
     ASSERT_TRUE(scheduler.configureLanes(2).isOk());
 
     PCB p1(1, "p1");
@@ -126,7 +133,9 @@ TEST(SchedulerConcurrentTest, ConcurrentEnqueueFromMultipleThreads)
     constexpr int kThreads = 4;
     constexpr int kPerThread = 50; // 200 processes total
 
-    Scheduler scheduler(std::make_unique<FcfsPolicy>());
+    SimulationClock clock;
+    NullTracer tracer(clock);
+    Scheduler scheduler(std::make_unique<FcfsPolicy>(), tracer);
     ASSERT_TRUE(scheduler.configureLanes(kThreads).isOk());
 
     // Pre-allocate PCBs so threads only enqueue (no allocations under lock).
@@ -183,7 +192,9 @@ TEST(SchedulerConcurrentTest, ConcurrentStealUnderConcurrentEnqueue)
 {
     constexpr int kEnqueueCount = 80;
 
-    Scheduler scheduler(std::make_unique<FcfsPolicy>());
+    SimulationClock clock;
+    NullTracer tracer(clock);
+    Scheduler scheduler(std::make_unique<FcfsPolicy>(), tracer);
     ASSERT_TRUE(scheduler.configureLanes(2).isOk());
 
     std::vector<PCB> pcbs;
@@ -193,7 +204,6 @@ TEST(SchedulerConcurrentTest, ConcurrentStealUnderConcurrentEnqueue)
         pcbs.emplace_back(static_cast<ProcessId>(i), "p" + std::to_string(i));
     }
 
-    SimulationClock clock;
     std::atomic<int> stolenCount{0};
     std::atomic<bool> start{false};
     std::atomic<bool> producerDone{false};

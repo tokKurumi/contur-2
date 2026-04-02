@@ -7,15 +7,17 @@
 #include <functional>
 #include <mutex>
 #include <optional>
+#include <string>
 #include <unordered_map>
 #include <utility>
 
 #include "contur/core/clock.h"
-
 #include "contur/process/pcb.h"
 #include "contur/process/state.h"
 #include "contur/scheduling/i_scheduling_policy.h"
 #include "contur/scheduling/statistics.h"
+#include "contur/tracing/i_tracer.h"
+#include "contur/tracing/trace_scope.h"
 
 namespace contur {
 
@@ -26,6 +28,7 @@ namespace contur {
         mutable std::mutex mutex_;
 
         std::unique_ptr<ISchedulingPolicy> policy;
+        ITracer &tracer;
         Statistics statistics;
         std::unordered_map<ProcessId, std::reference_wrapper<PCB>> processes;
         std::unordered_map<ProcessId, std::size_t> processLane;
@@ -34,8 +37,9 @@ namespace contur {
         std::vector<std::reference_wrapper<PCB>> blocked;
         std::vector<std::optional<std::reference_wrapper<PCB>>> runningByLane;
 
-        explicit Impl(std::unique_ptr<ISchedulingPolicy> policy)
+        explicit Impl(std::unique_ptr<ISchedulingPolicy> policy, ITracer &tracer)
             : policy(std::move(policy))
+            , tracer(tracer)
             , statistics(0.5)
             , readyByLane(1)
             , runningByLane(1)
@@ -262,8 +266,8 @@ namespace contur {
         }
     };
 
-    Scheduler::Scheduler(std::unique_ptr<ISchedulingPolicy> policy)
-        : impl_(std::make_unique<Impl>(std::move(policy)))
+    Scheduler::Scheduler(std::unique_ptr<ISchedulingPolicy> policy, ITracer &tracer)
+        : impl_(std::make_unique<Impl>(std::move(policy), tracer))
     {}
 
     Scheduler::~Scheduler() = default;
@@ -279,13 +283,31 @@ namespace contur {
     {
         std::lock_guard<std::mutex> lock(impl_->mutex_);
 
+        CONTUR_TRACE_SCOPE(impl_->tracer, "Scheduler", "enqueueToLane");
+        CONTUR_TRACE(
+            impl_->tracer,
+            "Scheduler",
+            "enqueue.request",
+            std::string("pid=") + std::to_string(pcb.id()) + ", lane=" + std::to_string(laneIndex)
+        );
+
         if (laneIndex >= impl_->readyByLane.size())
         {
+            CONTUR_TRACE_L(
+                impl_->tracer,
+                TraceLevel::Warn,
+                "Scheduler",
+                "enqueue.error",
+                errorCodeToString(ErrorCode::InvalidArgument)
+            );
             return Result<void>::error(ErrorCode::InvalidArgument);
         }
 
         if (pcb.id() == INVALID_PID)
         {
+            CONTUR_TRACE_L(
+                impl_->tracer, TraceLevel::Warn, "Scheduler", "enqueue.error", errorCodeToString(ErrorCode::InvalidPid)
+            );
             return Result<void>::error(ErrorCode::InvalidPid);
         }
 
@@ -309,11 +331,25 @@ namespace contur {
 
         if (pcb.state() == ProcessState::Running)
         {
+            CONTUR_TRACE_L(
+                impl_->tracer,
+                TraceLevel::Warn,
+                "Scheduler",
+                "enqueue.error",
+                errorCodeToString(ErrorCode::InvalidState)
+            );
             return Result<void>::error(ErrorCode::InvalidState);
         }
 
         if (!pcb.setState(ProcessState::Ready, currentTick))
         {
+            CONTUR_TRACE_L(
+                impl_->tracer,
+                TraceLevel::Error,
+                "Scheduler",
+                "enqueue.error",
+                errorCodeToString(ErrorCode::InvalidState)
+            );
             return Result<void>::error(ErrorCode::InvalidState);
         }
 
@@ -323,6 +359,7 @@ namespace contur {
         }
         impl_->readyByLane[laneIndex].push_back(std::ref(pcb));
         impl_->processLane[pcb.id()] = laneIndex;
+        CONTUR_TRACE(impl_->tracer, "Scheduler", "enqueue.ok", std::string("pid=") + std::to_string(pcb.id()));
         return Result<void>::ok();
     }
 
@@ -362,7 +399,23 @@ namespace contur {
     Result<ProcessId> Scheduler::selectNextForLane(std::size_t laneIndex, const IClock &clock)
     {
         std::lock_guard<std::mutex> lock(impl_->mutex_);
-        return impl_->selectNextForLane_nolock(laneIndex, clock);
+        CONTUR_TRACE_SCOPE(impl_->tracer, "Scheduler", "selectNextForLane");
+        CONTUR_TRACE(impl_->tracer, "Scheduler", "select.request", std::string("lane=") + std::to_string(laneIndex));
+
+        auto selected = impl_->selectNextForLane_nolock(laneIndex, clock);
+        if (selected.isOk())
+        {
+            CONTUR_TRACE(
+                impl_->tracer, "Scheduler", "select.ok", std::string("pid=") + std::to_string(selected.value())
+            );
+        }
+        else
+        {
+            CONTUR_TRACE_L(
+                impl_->tracer, TraceLevel::Debug, "Scheduler", "select.error", errorCodeToString(selected.errorCode())
+            );
+        }
+        return selected;
     }
 
     Result<ProcessId> Scheduler::stealNextForLane(std::size_t thiefLane, const IClock &clock)
@@ -443,7 +496,17 @@ namespace contur {
     Result<void> Scheduler::blockProcess(ProcessId pid, Tick currentTick)
     {
         std::lock_guard<std::mutex> lock(impl_->mutex_);
-        return impl_->blockProcess_nolock(pid, currentTick);
+        CONTUR_TRACE_SCOPE(impl_->tracer, "Scheduler", "blockProcess");
+        CONTUR_TRACE(impl_->tracer, "Scheduler", "block.request", std::string("pid=") + std::to_string(pid));
+
+        auto blocked = impl_->blockProcess_nolock(pid, currentTick);
+        if (blocked.isError())
+        {
+            CONTUR_TRACE_L(
+                impl_->tracer, TraceLevel::Warn, "Scheduler", "block.error", errorCodeToString(blocked.errorCode())
+            );
+        }
+        return blocked;
     }
 
     Result<void> Scheduler::unblock(ProcessId pid, Tick currentTick)
@@ -481,8 +544,14 @@ namespace contur {
     {
         std::lock_guard<std::mutex> lock(impl_->mutex_);
 
+        CONTUR_TRACE_SCOPE(impl_->tracer, "Scheduler", "terminate");
+        CONTUR_TRACE(impl_->tracer, "Scheduler", "terminate.request", std::string("pid=") + std::to_string(pid));
+
         if (!impl_->isKnown_nolock(pid))
         {
+            CONTUR_TRACE_L(
+                impl_->tracer, TraceLevel::Warn, "Scheduler", "terminate.error", errorCodeToString(ErrorCode::NotFound)
+            );
             return Result<void>::error(ErrorCode::NotFound);
         }
 
@@ -504,6 +573,13 @@ namespace contur {
         {
             if (!process->get().setState(ProcessState::Terminated, currentTick))
             {
+                CONTUR_TRACE_L(
+                    impl_->tracer,
+                    TraceLevel::Error,
+                    "Scheduler",
+                    "terminate.error",
+                    errorCodeToString(ErrorCode::InvalidState)
+                );
                 return Result<void>::error(ErrorCode::InvalidState);
             }
         }
@@ -512,6 +588,8 @@ namespace contur {
         impl_->processLane.erase(pid);
         impl_->statistics.clear(pid);
         impl_->processes.erase(pid);
+
+        CONTUR_TRACE(impl_->tracer, "Scheduler", "terminate.ok", std::string("pid=") + std::to_string(pid));
 
         return Result<void>::ok();
     }

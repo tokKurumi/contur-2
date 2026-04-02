@@ -9,6 +9,8 @@
 
 namespace contur {
 
+    class ITracer;
+
     /// @brief Scheduler host that manages process queues and policy decisions.
     ///
     /// Scheduler owns queue state and delegates ordering/preemption logic
@@ -18,7 +20,7 @@ namespace contur {
         public:
         /// @brief Constructs scheduler with initial policy.
         /// @param policy Initial scheduling policy. Null policy leaves scheduler unconfigured.
-        explicit Scheduler(std::unique_ptr<ISchedulingPolicy> policy);
+        explicit Scheduler(std::unique_ptr<ISchedulingPolicy> policy, ITracer &tracer);
 
         /// @brief Destroys scheduler.
         ~Scheduler() override;
