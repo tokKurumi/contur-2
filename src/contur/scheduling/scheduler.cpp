@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <mutex>
 #include <optional>
 #include <unordered_map>
 #include <utility>
@@ -20,6 +21,10 @@ namespace contur {
 
     struct Scheduler::Impl
     {
+        // Protects all mutable state. Callers of public methods hold this lock.
+        // Internal helpers that end in _nolock assume the caller already holds it.
+        mutable std::mutex mutex_;
+
         std::unique_ptr<ISchedulingPolicy> policy;
         Statistics statistics;
         std::unordered_map<ProcessId, std::reference_wrapper<PCB>> processes;
@@ -36,7 +41,7 @@ namespace contur {
             , runningByLane(1)
         {}
 
-        [[nodiscard]] bool isKnown(ProcessId pid) const noexcept
+        [[nodiscard]] bool isKnown_nolock(ProcessId pid) const noexcept
         {
             return processes.find(pid) != processes.end();
         }
@@ -92,14 +97,13 @@ namespace contur {
             return *it;
         }
 
-        void recordRunningBurst(ProcessId pid, Tick now)
+        void recordRunningBurst_nolock(ProcessId pid, Tick now)
         {
             auto it = runStart.find(pid);
             if (it == runStart.end())
             {
                 return;
             }
-
             Tick started = it->second;
             if (now >= started)
             {
@@ -108,7 +112,7 @@ namespace contur {
             runStart.erase(it);
         }
 
-        [[nodiscard]] std::optional<std::size_t> findRunningLane(ProcessId pid) const noexcept
+        [[nodiscard]] std::optional<std::size_t> findRunningLane_nolock(ProcessId pid) const noexcept
         {
             for (std::size_t lane = 0; lane < runningByLane.size(); ++lane)
             {
@@ -120,7 +124,7 @@ namespace contur {
             return std::nullopt;
         }
 
-        void removeFromAllReady(ProcessId pid)
+        void removeFromAllReady_nolock(ProcessId pid)
         {
             for (auto &queue : readyByLane)
             {
@@ -143,6 +147,119 @@ namespace contur {
                 .nice = priority.nice,
             };
         }
+
+        Result<ProcessId> selectNextForLane_nolock(std::size_t laneIndex, const IClock &clock)
+        {
+            if (laneIndex >= readyByLane.size())
+            {
+                return Result<ProcessId>::error(ErrorCode::InvalidArgument);
+            }
+
+            if (!policy)
+            {
+                return Result<ProcessId>::error(ErrorCode::InvalidState);
+            }
+
+            auto &ready = readyByLane[laneIndex];
+            auto &running = runningByLane[laneIndex];
+
+            if (ready.empty() && running.has_value())
+            {
+                return Result<ProcessId>::ok(running->get().id());
+            }
+
+            if (ready.empty())
+            {
+                return Result<ProcessId>::error(ErrorCode::NotFound);
+            }
+
+            auto readySnapshot = asConst(ready);
+            ProcessId candidateId = policy->selectNext(readySnapshot, clock);
+            if (candidateId == INVALID_PID)
+            {
+                return Result<ProcessId>::error(ErrorCode::InvalidState);
+            }
+
+            auto candidateOpt = findIn(ready, candidateId);
+            if (!candidateOpt.has_value())
+            {
+                return Result<ProcessId>::error(ErrorCode::InvalidState);
+            }
+            PCB &candidate = candidateOpt->get();
+
+            if (running.has_value())
+            {
+                PCB &runningPcb = running->get();
+                if (!policy->shouldPreempt(toSnapshot(runningPcb), toSnapshot(candidate), clock))
+                {
+                    return Result<ProcessId>::ok(runningPcb.id());
+                }
+
+                ProcessId runningPid = runningPcb.id();
+                recordRunningBurst_nolock(runningPid, clock.now());
+                if (!runningPcb.setState(ProcessState::Ready, clock.now()))
+                {
+                    return Result<ProcessId>::error(ErrorCode::InvalidState);
+                }
+                ready.push_back(std::ref(runningPcb));
+                processLane[runningPid] = laneIndex;
+                running.reset();
+            }
+
+            removeFrom(ready, candidateId);
+
+            if (!candidate.setState(ProcessState::Running, clock.now()))
+            {
+                return Result<ProcessId>::error(ErrorCode::InvalidState);
+            }
+
+            running = std::ref(candidate);
+            processLane[candidate.id()] = laneIndex;
+            runStart[candidate.id()] = clock.now();
+            return Result<ProcessId>::ok(candidate.id());
+        }
+
+        // Block a specific process by PID regardless of which queue it lives in.
+        Result<void> blockProcess_nolock(ProcessId pid, Tick currentTick)
+        {
+            if (!isKnown_nolock(pid))
+            {
+                return Result<void>::error(ErrorCode::NotFound);
+            }
+
+            // Check if it is currently running on some lane.
+            if (auto runningLane = findRunningLane_nolock(pid); runningLane.has_value())
+            {
+                PCB &running = runningByLane[runningLane.value()]->get();
+                recordRunningBurst_nolock(pid, currentTick);
+                if (!running.setState(ProcessState::Blocked, currentTick))
+                {
+                    return Result<void>::error(ErrorCode::InvalidState);
+                }
+                blocked.push_back(std::ref(running));
+                runningByLane[runningLane.value()].reset();
+                return Result<void>::ok();
+            }
+
+            // Check if it is in a ready queue.
+            for (auto &queue : readyByLane)
+            {
+                auto opt = findIn(queue, pid);
+                if (opt.has_value())
+                {
+                    PCB &pcb = opt->get();
+                    if (!pcb.setState(ProcessState::Blocked, currentTick))
+                    {
+                        return Result<void>::error(ErrorCode::InvalidState);
+                    }
+                    removeFrom(queue, pid);
+                    blocked.push_back(std::ref(pcb));
+                    return Result<void>::ok();
+                }
+            }
+
+            return Result<void>::error(ErrorCode::NotFound);
+        }
     };
 
     Scheduler::Scheduler(std::unique_ptr<ISchedulingPolicy> policy)
@@ -160,6 +277,8 @@ namespace contur {
 
     Result<void> Scheduler::enqueueToLane(PCB &pcb, std::size_t laneIndex, Tick currentTick)
     {
+        std::lock_guard<std::mutex> lock(impl_->mutex_);
+
         if (laneIndex >= impl_->readyByLane.size())
         {
             return Result<void>::error(ErrorCode::InvalidArgument);
@@ -170,7 +289,7 @@ namespace contur {
             return Result<void>::error(ErrorCode::InvalidPid);
         }
 
-        if (!impl_->isKnown(pcb.id()))
+        if (!impl_->isKnown_nolock(pcb.id()))
         {
             impl_->processes.emplace(pcb.id(), std::ref(pcb));
         }
@@ -183,7 +302,7 @@ namespace contur {
             }
         }
 
-        if (impl_->findRunningLane(pcb.id()).has_value())
+        if (impl_->findRunningLane_nolock(pcb.id()).has_value())
         {
             return Result<void>::ok();
         }
@@ -209,7 +328,9 @@ namespace contur {
 
     Result<void> Scheduler::dequeue(ProcessId pid)
     {
-        if (!impl_->isKnown(pid))
+        std::lock_guard<std::mutex> lock(impl_->mutex_);
+
+        if (!impl_->isKnown_nolock(pid))
         {
             return Result<void>::error(ErrorCode::NotFound);
         }
@@ -222,7 +343,7 @@ namespace contur {
             }
         }
 
-        impl_->removeFromAllReady(pid);
+        impl_->removeFromAllReady_nolock(pid);
         Impl::removeFrom(impl_->blocked, pid);
         impl_->processLane.erase(pid);
         impl_->runStart.erase(pid);
@@ -234,87 +355,26 @@ namespace contur {
 
     Result<ProcessId> Scheduler::selectNext(const IClock &clock)
     {
-        return selectNextForLane(0, clock);
+        std::lock_guard<std::mutex> lock(impl_->mutex_);
+        return impl_->selectNextForLane_nolock(0, clock);
     }
 
     Result<ProcessId> Scheduler::selectNextForLane(std::size_t laneIndex, const IClock &clock)
     {
-        if (laneIndex >= impl_->readyByLane.size())
-        {
-            return Result<ProcessId>::error(ErrorCode::InvalidArgument);
-        }
-
-        if (!impl_->policy)
-        {
-            return Result<ProcessId>::error(ErrorCode::InvalidState);
-        }
-
-        auto &ready = impl_->readyByLane[laneIndex];
-        auto &running = impl_->runningByLane[laneIndex];
-
-        if (ready.empty() && running.has_value())
-        {
-            return Result<ProcessId>::ok(running->get().id());
-        }
-
-        if (ready.empty())
-        {
-            return Result<ProcessId>::error(ErrorCode::NotFound);
-        }
-
-        auto readySnapshot = Impl::asConst(ready);
-        ProcessId candidateId = impl_->policy->selectNext(readySnapshot, clock);
-        if (candidateId == INVALID_PID)
-        {
-            return Result<ProcessId>::error(ErrorCode::InvalidState);
-        }
-
-        auto candidateOpt = impl_->findIn(ready, candidateId);
-        if (!candidateOpt.has_value())
-        {
-            return Result<ProcessId>::error(ErrorCode::InvalidState);
-        }
-        PCB &candidate = candidateOpt->get();
-
-        if (running.has_value())
-        {
-            PCB &runningPcb = running->get();
-            if (!impl_->policy->shouldPreempt(Impl::toSnapshot(runningPcb), Impl::toSnapshot(candidate), clock))
-            {
-                return Result<ProcessId>::ok(runningPcb.id());
-            }
-
-            ProcessId runningPid = runningPcb.id();
-            impl_->recordRunningBurst(runningPid, clock.now());
-            if (!runningPcb.setState(ProcessState::Ready, clock.now()))
-            {
-                return Result<ProcessId>::error(ErrorCode::InvalidState);
-            }
-            ready.push_back(std::ref(runningPcb));
-            impl_->processLane[runningPid] = laneIndex;
-            running.reset();
-        }
-
-        Impl::removeFrom(ready, candidateId);
-
-        if (!candidate.setState(ProcessState::Running, clock.now()))
-        {
-            return Result<ProcessId>::error(ErrorCode::InvalidState);
-        }
-
-        running = std::ref(candidate);
-        impl_->processLane[candidate.id()] = laneIndex;
-        impl_->runStart[candidate.id()] = clock.now();
-        return Result<ProcessId>::ok(candidate.id());
+        std::lock_guard<std::mutex> lock(impl_->mutex_);
+        return impl_->selectNextForLane_nolock(laneIndex, clock);
     }
 
     Result<ProcessId> Scheduler::stealNextForLane(std::size_t thiefLane, const IClock &clock)
     {
+        std::lock_guard<std::mutex> lock(impl_->mutex_);
+
         if (thiefLane >= impl_->readyByLane.size())
         {
             return Result<ProcessId>::error(ErrorCode::InvalidArgument);
         }
 
+        // Find the victim lane with the largest ready queue.
         std::optional<std::size_t> victimLane;
         std::size_t victimQueueSize = 0;
         for (std::size_t lane = 0; lane < impl_->readyByLane.size(); ++lane)
@@ -323,7 +383,6 @@ namespace contur {
             {
                 continue;
             }
-
             std::size_t queueSize = impl_->readyByLane[lane].size();
             if (queueSize > victimQueueSize)
             {
@@ -337,18 +396,21 @@ namespace contur {
             return Result<ProcessId>::error(ErrorCode::NotFound);
         }
 
+        // Steal from the FRONT of the victim queue to preserve FIFO ordering.
         auto &victimQueue = impl_->readyByLane[victimLane.value()];
-        PCB &stolen = victimQueue.back().get();
-        victimQueue.pop_back();
+        PCB &stolen = victimQueue.front().get();
+        victimQueue.erase(victimQueue.begin());
 
         impl_->readyByLane[thiefLane].push_back(std::ref(stolen));
         impl_->processLane[stolen.id()] = thiefLane;
 
-        return selectNextForLane(thiefLane, clock);
+        return impl_->selectNextForLane_nolock(thiefLane, clock);
     }
 
     Result<void> Scheduler::blockRunning(Tick currentTick)
     {
+        std::lock_guard<std::mutex> lock(impl_->mutex_);
+
         std::optional<std::size_t> runningLane;
         for (std::size_t lane = 0; lane < impl_->runningByLane.size(); ++lane)
         {
@@ -366,7 +428,7 @@ namespace contur {
 
         PCB &running = impl_->runningByLane[runningLane.value()]->get();
         ProcessId pid = running.id();
-        impl_->recordRunningBurst(pid, currentTick);
+        impl_->recordRunningBurst_nolock(pid, currentTick);
 
         if (!running.setState(ProcessState::Blocked, currentTick))
         {
@@ -378,8 +440,16 @@ namespace contur {
         return Result<void>::ok();
     }
 
+    Result<void> Scheduler::blockProcess(ProcessId pid, Tick currentTick)
+    {
+        std::lock_guard<std::mutex> lock(impl_->mutex_);
+        return impl_->blockProcess_nolock(pid, currentTick);
+    }
+
     Result<void> Scheduler::unblock(ProcessId pid, Tick currentTick)
     {
+        std::lock_guard<std::mutex> lock(impl_->mutex_);
+
         auto processOpt = impl_->findIn(impl_->blocked, pid);
         if (!processOpt.has_value())
         {
@@ -409,22 +479,24 @@ namespace contur {
 
     Result<void> Scheduler::terminate(ProcessId pid, Tick currentTick)
     {
-        if (!impl_->isKnown(pid))
+        std::lock_guard<std::mutex> lock(impl_->mutex_);
+
+        if (!impl_->isKnown_nolock(pid))
         {
             return Result<void>::error(ErrorCode::NotFound);
         }
 
         std::optional<std::reference_wrapper<PCB>> process;
-        if (auto runningLane = impl_->findRunningLane(pid); runningLane.has_value())
+        if (auto runningLane = impl_->findRunningLane_nolock(pid); runningLane.has_value())
         {
             process = impl_->runningByLane[runningLane.value()];
-            impl_->recordRunningBurst(pid, currentTick);
+            impl_->recordRunningBurst_nolock(pid, currentTick);
             impl_->runningByLane[runningLane.value()].reset();
         }
         else
         {
             process = impl_->processes.find(pid)->second;
-            impl_->removeFromAllReady(pid);
+            impl_->removeFromAllReady_nolock(pid);
             Impl::removeFrom(impl_->blocked, pid);
         }
 
@@ -446,6 +518,7 @@ namespace contur {
 
     std::vector<ProcessId> Scheduler::getQueueSnapshot() const
     {
+        std::lock_guard<std::mutex> lock(impl_->mutex_);
         std::vector<ProcessId> out;
         for (const auto &queue : impl_->readyByLane)
         {
@@ -460,6 +533,7 @@ namespace contur {
 
     std::vector<std::vector<ProcessId>> Scheduler::getPerLaneQueueSnapshot() const
     {
+        std::lock_guard<std::mutex> lock(impl_->mutex_);
         std::vector<std::vector<ProcessId>> snapshot;
         snapshot.resize(impl_->readyByLane.size());
 
@@ -479,6 +553,7 @@ namespace contur {
 
     std::vector<ProcessId> Scheduler::getBlockedSnapshot() const
     {
+        std::lock_guard<std::mutex> lock(impl_->mutex_);
         std::vector<ProcessId> out;
         out.reserve(impl_->blocked.size());
         for (const auto &pcb : impl_->blocked)
@@ -490,6 +565,7 @@ namespace contur {
 
     std::vector<ProcessId> Scheduler::runningProcesses() const
     {
+        std::lock_guard<std::mutex> lock(impl_->mutex_);
         std::vector<ProcessId> running;
         running.reserve(impl_->runningByLane.size());
         for (const auto &laneRunning : impl_->runningByLane)
@@ -504,6 +580,8 @@ namespace contur {
 
     Result<void> Scheduler::configureLanes(std::size_t laneCount)
     {
+        std::lock_guard<std::mutex> lock(impl_->mutex_);
+
         if (laneCount == 0)
         {
             return Result<void>::error(ErrorCode::InvalidArgument);
@@ -522,11 +600,14 @@ namespace contur {
 
     std::size_t Scheduler::laneCount() const noexcept
     {
+        std::lock_guard<std::mutex> lock(impl_->mutex_);
         return impl_->readyByLane.size();
     }
 
     Result<void> Scheduler::setPolicy(std::unique_ptr<ISchedulingPolicy> policy)
     {
+        std::lock_guard<std::mutex> lock(impl_->mutex_);
+
         if (!policy)
         {
             return Result<void>::error(ErrorCode::InvalidState);
@@ -538,6 +619,7 @@ namespace contur {
 
     std::string_view Scheduler::policyName() const noexcept
     {
+        std::lock_guard<std::mutex> lock(impl_->mutex_);
         if (!impl_->policy)
         {
             return "Unconfigured";

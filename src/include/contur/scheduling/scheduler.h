@@ -46,6 +46,9 @@ namespace contur {
         /// @brief Moves running process to blocked state.
         [[nodiscard]] Result<void> blockRunning(Tick currentTick) override;
 
+        /// @brief Moves a specific process to blocked state.
+        [[nodiscard]] Result<void> blockProcess(ProcessId pid, Tick currentTick) override;
+
         /// @brief Moves blocked process back to ready queue.
         [[nodiscard]] Result<void> unblock(ProcessId pid, Tick currentTick) override;
 

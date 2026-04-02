@@ -43,7 +43,15 @@ namespace contur {
         /// @brief Moves current running process to blocked queue.
         /// @param currentTick Simulation tick for blocked queue timing metadata.
         /// @return Ok on success; error if no process is currently running.
+        /// @note In multi-lane deployments prefer blockProcess(pid, tick) to avoid
+        ///       ambiguity when several lanes have a running process simultaneously.
         [[nodiscard]] virtual Result<void> blockRunning(Tick currentTick) = 0;
+
+        /// @brief Moves a specific running or ready process to the blocked queue.
+        /// @param pid Process identifier to block.
+        /// @param currentTick Simulation tick for timing metadata.
+        /// @return Ok on success; NotFound if pid is unknown; InvalidState on bad transition.
+        [[nodiscard]] virtual Result<void> blockProcess(ProcessId pid, Tick currentTick) = 0;
 
         /// @brief Moves a blocked process back to ready queue.
         /// @param pid Identifier of the blocked process.
@@ -87,6 +95,12 @@ namespace contur {
         [[nodiscard]] virtual Result<ProcessId> selectNextForLane(std::size_t laneIndex, const IClock &clock) = 0;
 
         /// @brief Steals one ready process from another lane and schedules it on thief lane.
+        ///
+        /// This is **scheduler-level** (intra-dispatcher) work stealing: it moves a
+        /// simulated process between per-core ready queues inside a single dispatcher.
+        /// It is independent of runtime-level (inter-dispatcher) work stealing performed
+        /// by DispatcherPool, which moves whole dispatcher lanes between host threads.
+        ///
         /// @param thiefLane Lane that steals work.
         /// @param clock Simulation clock for selection and preemption checks.
         /// @return Selected process id on thief lane, or NotFound/InvalidState.

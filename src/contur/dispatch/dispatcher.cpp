@@ -126,7 +126,7 @@ namespace contur {
             return Result<void>::ok();
 
         case StopReason::Interrupted:
-            return impl_->scheduler.blockRunning(impl_->clock.now());
+            return impl_->scheduler.blockProcess(pid, impl_->clock.now());
 
         case StopReason::ProcessExited:
         case StopReason::Error:
