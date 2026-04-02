@@ -11,14 +11,3 @@ updates:
     labels:
       - "dependencies"
       - "github-actions"
-
-  - package-ecosystem: "cmake"
-    directory: "/src"
-    schedule:
-      interval: "monthly"
-    commit-message:
-      prefix: "build"
-      include: "scope"
-    labels:
-      - "dependencies"
-      - "cmake"
