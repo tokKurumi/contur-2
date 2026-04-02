@@ -17,6 +17,7 @@ namespace contur {
     class IExecutionEngine;
     class IScheduler;
     class IDispatcher;
+    class ITracer;
     class IFileSystem;
     class IDispatchRuntime;
     class IPageReplacementPolicy;
@@ -50,6 +51,9 @@ namespace contur {
 
         /// @brief Dispatcher orchestrating process lifecycle.
         std::unique_ptr<IDispatcher> dispatcher;
+
+        /// @brief Tracer used for kernel-level event instrumentation.
+        std::unique_ptr<ITracer> tracer;
 
         /// @brief File system service.
         std::unique_ptr<IFileSystem> fileSystem;

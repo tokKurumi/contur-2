@@ -22,6 +22,8 @@
 #include "contur/scheduling/i_scheduler.h"
 #include "contur/sync/i_sync_primitive.h"
 #include "contur/syscall/syscall_table.h"
+#include "contur/tracing/i_tracer.h"
+#include "contur/tracing/trace_scope.h"
 
 namespace contur {
 
@@ -35,6 +37,7 @@ namespace contur {
         std::unique_ptr<IExecutionEngine> executionEngine;
         std::unique_ptr<IScheduler> scheduler;
         std::unique_ptr<IDispatcher> dispatcher;
+        std::unique_ptr<ITracer> tracer;
         std::unique_ptr<IDispatchRuntime> runtime;
         std::unique_ptr<IFileSystem> fileSystem;
         std::unique_ptr<IpcManager> ipcManager;
@@ -53,6 +56,7 @@ namespace contur {
             , executionEngine(std::move(deps.executionEngine))
             , scheduler(std::move(deps.scheduler))
             , dispatcher(std::move(deps.dispatcher))
+            , tracer(std::move(deps.tracer))
             , runtime(std::move(deps.runtime))
             , fileSystem(std::move(deps.fileSystem))
             , ipcManager(std::move(deps.ipcManager))
@@ -116,12 +120,16 @@ namespace contur {
 
     Result<ProcessId> Kernel::createProcess(const ProcessConfig &config)
     {
-        if (!impl_->dispatcher || !impl_->clock)
+        if (!impl_->dispatcher || !impl_->clock || !impl_->tracer)
         {
             return Result<ProcessId>::error(ErrorCode::InvalidState);
         }
+
+        CONTUR_TRACE_SCOPE(*impl_->tracer, "Kernel", "createProcess");
+
         if (config.code.empty())
         {
+            CONTUR_TRACE(*impl_->tracer, "Kernel", "createProcess.error", errorCodeToString(ErrorCode::InvalidArgument));
             return Result<ProcessId>::error(ErrorCode::InvalidArgument);
         }
 
@@ -131,11 +139,13 @@ namespace contur {
             pid = impl_->allocatePid();
             if (pid == INVALID_PID)
             {
+                CONTUR_TRACE(*impl_->tracer, "Kernel", "createProcess.error", errorCodeToString(ErrorCode::OutOfMemory));
                 return Result<ProcessId>::error(ErrorCode::OutOfMemory);
             }
         }
         else if (impl_->dispatcher->hasProcess(pid))
         {
+            CONTUR_TRACE(*impl_->tracer, "Kernel", "createProcess.error", errorCodeToString(ErrorCode::AlreadyExists));
             return Result<ProcessId>::error(ErrorCode::AlreadyExists);
         }
 
@@ -148,36 +158,45 @@ namespace contur {
         auto created = impl_->dispatcher->createProcess(std::move(process), impl_->clock->now());
         if (created.isError())
         {
+            CONTUR_TRACE(*impl_->tracer, "Kernel", "createProcess.error", errorCodeToString(created.errorCode()));
             return Result<ProcessId>::error(created.errorCode());
         }
 
         impl_->processRefs.emplace(pid, processRef);
+        CONTUR_TRACE(*impl_->tracer, "Kernel", "createProcess.ok", std::string("pid=") + std::to_string(pid));
         return Result<ProcessId>::ok(pid);
     }
 
     Result<void> Kernel::terminateProcess(ProcessId pid)
     {
-        if (!impl_->dispatcher || !impl_->clock)
+        if (!impl_->dispatcher || !impl_->clock || !impl_->tracer)
         {
             return Result<void>::error(ErrorCode::InvalidState);
         }
 
+        CONTUR_TRACE_SCOPE(*impl_->tracer, "Kernel", "terminateProcess");
+        CONTUR_TRACE(*impl_->tracer, "Kernel", "terminateProcess.request", std::string("pid=") + std::to_string(pid));
+
         auto terminated = impl_->dispatcher->terminateProcess(pid, impl_->clock->now());
         if (terminated.isError())
         {
+            CONTUR_TRACE(*impl_->tracer, "Kernel", "terminateProcess.error", errorCodeToString(terminated.errorCode()));
             return terminated;
         }
 
         impl_->processRefs.erase(pid);
+        CONTUR_TRACE(*impl_->tracer, "Kernel", "terminateProcess.ok", std::string("pid=") + std::to_string(pid));
         return Result<void>::ok();
     }
 
     Result<void> Kernel::tick(std::size_t tickBudget)
     {
-        if (!impl_->dispatcher)
+        if (!impl_->dispatcher || !impl_->tracer)
         {
             return Result<void>::error(ErrorCode::InvalidState);
         }
+
+        CONTUR_TRACE_SCOPE(*impl_->tracer, "Kernel", "tick");
 
         std::size_t budget = tickBudget == 0 ? impl_->defaultTickBudget : tickBudget;
         if (budget == 0)
@@ -185,8 +204,14 @@ namespace contur {
             budget = 1;
         }
 
+        CONTUR_TRACE(*impl_->tracer, "Kernel", "tick.dispatch", std::string("budget=") + std::to_string(budget));
+
         auto result = impl_->dispatcher->dispatch(budget);
         impl_->pruneDeadProcessRefs();
+        if (result.isError())
+        {
+            CONTUR_TRACE(*impl_->tracer, "Kernel", "tick.error", errorCodeToString(result.errorCode()));
+        }
         return result;
     }
 

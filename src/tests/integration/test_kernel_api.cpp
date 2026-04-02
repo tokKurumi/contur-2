@@ -27,6 +27,7 @@
 #include "contur/scheduling/round_robin_policy.h"
 #include "contur/scheduling/scheduler.h"
 #include "contur/syscall/syscall_table.h"
+#include "contur/tracing/null_tracer.h"
 
 using namespace contur;
 
@@ -152,6 +153,7 @@ namespace {
     )
     {
         auto clock = std::make_unique<SimulationClock>();
+        auto tracer = std::make_unique<NullTracer>(*clock);
         auto memory = std::make_unique<PhysicalMemory>(256);
         auto mmu = std::make_unique<Mmu>(*memory, std::make_unique<FifoReplacement>());
         auto virtualMemory = std::make_unique<VirtualMemory>(*mmu, MAX_PROCESSES);
@@ -182,6 +184,7 @@ namespace {
             .withExecutionEngine(std::move(executionEngine))
             .withScheduler(std::move(scheduler))
             .withDispatcher(std::move(dispatcher))
+            .withTracer(std::move(tracer))
             .withFileSystem(std::make_unique<SimpleFS>())
             .withIpcManager(std::make_unique<IpcManager>())
             .withSyscallTable(std::make_unique<SyscallTable>())

@@ -5,12 +5,12 @@
 #include <span>
 #include <unordered_map>
 #include <vector>
+#include <algorithm>
 
 #include <gtest/gtest.h>
 
 #include "contur/core/clock.h"
 #include "contur/core/error.h"
-
 #include "contur/arch/instruction.h"
 #include "contur/cpu/cpu.h"
 #include "contur/dispatch/dispatcher.h"
@@ -31,6 +31,9 @@
 #include "contur/scheduling/scheduler.h"
 #include "contur/sync/mutex.h"
 #include "contur/syscall/syscall_table.h"
+#include "contur/tracing/buffer_sink.h"
+#include "contur/tracing/null_tracer.h"
+#include "contur/tracing/tracer.h"
 
 using namespace contur;
 
@@ -229,6 +232,7 @@ namespace {
     )
     {
         auto clock = std::make_unique<SimulationClock>();
+        auto tracer = std::make_unique<NullTracer>(*clock);
         auto memory = std::make_unique<PhysicalMemory>(2048);
         auto mmu = std::make_unique<Mmu>(*memory, std::make_unique<FifoReplacement>());
         auto virtualMemory = std::make_unique<VirtualMemory>(*mmu, MAX_PROCESSES);
@@ -250,6 +254,7 @@ namespace {
                                                 .withExecutionEngine(std::move(engine))
                                                 .withScheduler(std::move(scheduler))
                                                 .withDispatcher(std::move(dispatcher))
+                                                .withTracer(std::move(tracer))
                                                 .withFileSystem(std::make_unique<SimpleFS>())
                                                 .withIpcManager(std::make_unique<IpcManager>())
                                                 .withSyscallTable(std::make_unique<SyscallTable>())
@@ -380,6 +385,59 @@ TEST(KernelBuilderTest, WithRuntimeWiresRuntimeAndMpDispatcherThroughBuilder)
     EXPECT_EQ(runtimeRaw->lastTickBudget(), 3u);
     EXPECT_EQ(laneRaw->dispatchCalls(), 1u);
     EXPECT_EQ(laneRaw->lastBudget(), 3u);
+}
+
+TEST(KernelBuilderTest, WithTracerCapturesKernelEvents)
+{
+    auto clock = std::make_unique<SimulationClock>();
+    SimulationClock *clockRaw = clock.get();
+
+    auto memory = std::make_unique<PhysicalMemory>(1024);
+    auto mmu = std::make_unique<Mmu>(*memory, std::make_unique<FifoReplacement>());
+    auto virtualMemory = std::make_unique<VirtualMemory>(*mmu, MAX_PROCESSES);
+    auto cpu = std::make_unique<Cpu>(*memory);
+    auto engine = std::make_unique<InterpreterEngine>(*cpu, *memory);
+    auto scheduler = std::make_unique<Scheduler>(std::make_unique<RoundRobinPolicy>(4));
+    auto dispatcher = std::make_unique<Dispatcher>(*scheduler, *engine, *virtualMemory, *clock);
+
+    auto sink = std::make_unique<BufferSink>();
+    BufferSink *sinkRaw = sink.get();
+    auto tracer = std::make_unique<Tracer>(std::move(sink), *clockRaw);
+
+    auto buildResult = KernelBuilder()
+                           .withClock(std::move(clock))
+                           .withMemory(std::move(memory))
+                           .withMmu(std::move(mmu))
+                           .withVirtualMemory(std::move(virtualMemory))
+                           .withCpu(std::move(cpu))
+                           .withExecutionEngine(std::move(engine))
+                           .withScheduler(std::move(scheduler))
+                           .withDispatcher(std::move(dispatcher))
+                           .withTracer(std::move(tracer))
+                           .withFileSystem(std::make_unique<SimpleFS>())
+                           .withIpcManager(std::make_unique<IpcManager>())
+                           .withSyscallTable(std::make_unique<SyscallTable>())
+                           .withDefaultTickBudget(4)
+                           .build();
+
+    ASSERT_TRUE(buildResult.isOk());
+    auto kernel = std::move(buildResult).value();
+
+    ASSERT_TRUE(kernel->createProcess(makeConfig("trace-kernel")).isOk());
+
+    auto events = sinkRaw->snapshot();
+    ASSERT_FALSE(events.empty());
+
+    const bool hasCreateProcessScope = std::any_of(events.begin(), events.end(), [](const TraceEvent &event) {
+        return event.operation == "createProcess";
+    });
+
+    const bool hasCreateProcessSuccess = std::any_of(events.begin(), events.end(), [](const TraceEvent &event) {
+        return event.operation == "createProcess.ok";
+    });
+
+    EXPECT_TRUE(hasCreateProcessScope);
+    EXPECT_TRUE(hasCreateProcessSuccess);
 }
 
 TEST(KernelBuilderTest, BuildFailsWhenDefaultTickBudgetIsZero)

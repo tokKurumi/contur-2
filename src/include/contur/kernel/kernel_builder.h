@@ -19,6 +19,7 @@ namespace contur {
     class IScheduler;
     class IDispatcher;
     class IDispatchRuntime;
+    class ITracer;
     class IFileSystem;
     class IpcManager;
     class SyscallTable;
@@ -84,6 +85,11 @@ namespace contur {
         /// @param dispatcher Dispatcher implementation owned by the builder.
         /// @return Reference to this builder.
         [[nodiscard]] KernelBuilder &withDispatcher(std::unique_ptr<IDispatcher> dispatcher);
+
+        /// @brief Injects tracing dependency.
+        /// @param tracer Tracer implementation owned by the builder.
+        /// @return Reference to this builder.
+        [[nodiscard]] KernelBuilder &withTracer(std::unique_ptr<ITracer> tracer);
 
         /// @brief Injects a dispatch runtime whose lifetime is managed by the kernel.
         /// @details Use this when the runtime must outlive all dispatchers it drives.

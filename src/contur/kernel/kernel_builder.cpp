@@ -19,6 +19,7 @@
 #include "contur/memory/i_virtual_memory.h"
 #include "contur/scheduling/i_scheduler.h"
 #include "contur/syscall/syscall_table.h"
+#include "contur/tracing/i_tracer.h"
 
 namespace contur {
 
@@ -27,7 +28,8 @@ namespace contur {
         [[nodiscard]] bool hasAllRequiredDependencies(const KernelDependencies &deps)
         {
             return deps.clock && deps.memory && deps.mmu && deps.virtualMemory && deps.cpu && deps.executionEngine &&
-                   deps.scheduler && deps.dispatcher && deps.fileSystem && deps.ipcManager && deps.syscallTable;
+                   deps.scheduler && deps.dispatcher && deps.tracer && deps.fileSystem && deps.ipcManager &&
+                   deps.syscallTable;
         }
 
     } // namespace
@@ -92,6 +94,12 @@ namespace contur {
     KernelBuilder &KernelBuilder::withDispatcher(std::unique_ptr<IDispatcher> dispatcher)
     {
         impl_->deps.dispatcher = std::move(dispatcher);
+        return *this;
+    }
+
+    KernelBuilder &KernelBuilder::withTracer(std::unique_ptr<ITracer> tracer)
+    {
+        impl_->deps.tracer = std::move(tracer);
         return *this;
     }
 
