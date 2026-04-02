@@ -6,7 +6,6 @@
 #include <memory>
 
 #include "contur/process/priority.h"
-
 #include "contur/sync/i_sync_primitive.h"
 
 namespace contur {

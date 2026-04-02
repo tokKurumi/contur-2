@@ -19,9 +19,7 @@ namespace contur {
         {}
     };
 
-    MPDispatcher::MPDispatcher(
-        std::vector<std::reference_wrapper<IDispatcher>> dispatchers, IDispatchRuntime &runtime
-    )
+    MPDispatcher::MPDispatcher(std::vector<std::reference_wrapper<IDispatcher>> dispatchers, IDispatchRuntime &runtime)
         : impl_(std::make_unique<Impl>(std::move(dispatchers), runtime))
     {}
 

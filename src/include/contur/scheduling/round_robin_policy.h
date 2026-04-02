@@ -29,9 +29,7 @@ namespace contur {
 
         /// @brief Returns true if running process exhausted its slice.
         [[nodiscard]] bool shouldPreempt(
-            const SchedulingProcessSnapshot &running,
-            const SchedulingProcessSnapshot &candidate,
-            const IClock &clock
+            const SchedulingProcessSnapshot &running, const SchedulingProcessSnapshot &candidate, const IClock &clock
         ) const override;
 
         /// @brief Configured time slice.

@@ -22,8 +22,7 @@ namespace contur {
         return "SPN";
     }
 
-    ProcessId SpnPolicy::selectNext(const std::vector<SchedulingProcessSnapshot> &readyQueue, const IClock &clock)
-        const
+    ProcessId SpnPolicy::selectNext(const std::vector<SchedulingProcessSnapshot> &readyQueue, const IClock &clock) const
     {
         (void)clock;
         if (readyQueue.empty())
@@ -44,9 +43,7 @@ namespace contur {
     }
 
     bool SpnPolicy::shouldPreempt(
-        const SchedulingProcessSnapshot &running,
-        const SchedulingProcessSnapshot &candidate,
-        const IClock &clock
+        const SchedulingProcessSnapshot &running, const SchedulingProcessSnapshot &candidate, const IClock &clock
     ) const
     {
         (void)running;

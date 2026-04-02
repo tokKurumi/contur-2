@@ -51,16 +51,18 @@ namespace contur {
                 const PCB &process = pcb.get();
                 const auto &timing = process.timing();
                 const auto &priority = process.priority();
-                out.push_back(SchedulingProcessSnapshot{
-                    .pid = process.id(),
-                    .arrivalTime = timing.arrivalTime,
-                    .lastStateChange = timing.lastStateChange,
-                    .estimatedBurst = timing.estimatedBurst,
-                    .remainingBurst = timing.remainingBurst,
-                    .totalWaitTime = timing.totalWaitTime,
-                    .effectivePriority = priority.effective,
-                    .nice = priority.nice,
-                });
+                out.push_back(
+                    SchedulingProcessSnapshot{
+                        .pid = process.id(),
+                        .arrivalTime = timing.arrivalTime,
+                        .lastStateChange = timing.lastStateChange,
+                        .estimatedBurst = timing.estimatedBurst,
+                        .remainingBurst = timing.remainingBurst,
+                        .totalWaitTime = timing.totalWaitTime,
+                        .effectivePriority = priority.effective,
+                        .nice = priority.nice,
+                    }
+                );
             }
             return out;
         }

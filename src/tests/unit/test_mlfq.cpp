@@ -20,8 +20,12 @@ TEST(MlfqPolicyTest, SelectsFromHighestPriorityLevel)
     PCB high(2, "high", Priority(PriorityLevel::High));
 
     std::vector<SchedulingProcessSnapshot> ready = {
-        {.pid = low.id(), .lastStateChange = low.timing().lastStateChange, .effectivePriority = low.priority().effective},
-        {.pid = high.id(), .lastStateChange = high.timing().lastStateChange, .effectivePriority = high.priority().effective},
+        {.pid = low.id(),
+         .lastStateChange = low.timing().lastStateChange,
+         .effectivePriority = low.priority().effective},
+        {.pid = high.id(),
+         .lastStateChange = high.timing().lastStateChange,
+         .effectivePriority = high.priority().effective},
     };
     EXPECT_EQ(policy.selectNext(ready, clock), 2u);
 }

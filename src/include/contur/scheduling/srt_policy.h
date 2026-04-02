@@ -23,9 +23,7 @@ namespace contur {
 
         /// @brief Preempts when candidate has smaller remaining burst.
         [[nodiscard]] bool shouldPreempt(
-            const SchedulingProcessSnapshot &running,
-            const SchedulingProcessSnapshot &candidate,
-            const IClock &clock
+            const SchedulingProcessSnapshot &running, const SchedulingProcessSnapshot &candidate, const IClock &clock
         ) const override;
     };
 

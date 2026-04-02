@@ -8,9 +8,8 @@
 
 #include <gtest/gtest.h>
 
-#include "contur/core/error.h"
-
 #include "contur/core/clock.h"
+#include "contur/core/error.h"
 
 #include "contur/arch/instruction.h"
 #include "contur/cpu/cpu.h"
@@ -35,17 +34,14 @@ using namespace contur;
 
 namespace {
 
-    template <typename Snapshot> concept HasHostThreadCountField = requires(Snapshot snapshot) {
-        snapshot.hostThreadCount;
-    };
+    template <typename Snapshot>
+    concept HasHostThreadCountField = requires(Snapshot snapshot) { snapshot.hostThreadCount; };
 
-    template <typename Snapshot> concept HasDeterministicModeField = requires(Snapshot snapshot) {
-        snapshot.deterministicMode;
-    };
+    template <typename Snapshot>
+    concept HasDeterministicModeField = requires(Snapshot snapshot) { snapshot.deterministicMode; };
 
-    template <typename Snapshot> concept HasWorkStealingEnabledField = requires(Snapshot snapshot) {
-        snapshot.workStealingEnabled;
-    };
+    template <typename Snapshot>
+    concept HasWorkStealingEnabledField = requires(Snapshot snapshot) { snapshot.workStealingEnabled; };
 
     class FakeDispatcher final : public IDispatcher
     {
@@ -157,17 +153,17 @@ namespace {
 
         KernelBuilder builder;
         [[maybe_unused]] auto &configured = builder.withClock(std::move(clock))
-                                               .withMemory(std::move(memory))
-                                               .withMmu(std::move(mmu))
-                                               .withVirtualMemory(std::move(virtualMemory))
-                                               .withCpu(std::move(cpu))
-                                               .withExecutionEngine(std::move(engine))
-                                               .withScheduler(std::move(scheduler))
-                                               .withDispatcher(std::move(dispatcher))
-                                               .withFileSystem(std::make_unique<SimpleFS>())
-                                               .withIpcManager(std::make_unique<IpcManager>())
-                                               .withSyscallTable(std::make_unique<SyscallTable>())
-                                               .withDefaultTickBudget(defaultTickBudget);
+                                                .withMemory(std::move(memory))
+                                                .withMmu(std::move(mmu))
+                                                .withVirtualMemory(std::move(virtualMemory))
+                                                .withCpu(std::move(cpu))
+                                                .withExecutionEngine(std::move(engine))
+                                                .withScheduler(std::move(scheduler))
+                                                .withDispatcher(std::move(dispatcher))
+                                                .withFileSystem(std::make_unique<SimpleFS>())
+                                                .withIpcManager(std::make_unique<IpcManager>())
+                                                .withSyscallTable(std::make_unique<SyscallTable>())
+                                                .withDefaultTickBudget(defaultTickBudget);
         return builder;
     }
 

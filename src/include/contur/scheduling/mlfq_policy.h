@@ -30,9 +30,7 @@ namespace contur {
 
         /// @brief Returns true when running process should be preempted.
         [[nodiscard]] bool shouldPreempt(
-            const SchedulingProcessSnapshot &running,
-            const SchedulingProcessSnapshot &candidate,
-            const IClock &clock
+            const SchedulingProcessSnapshot &running, const SchedulingProcessSnapshot &candidate, const IClock &clock
         ) const override;
 
         /// @brief Configured level time slices.

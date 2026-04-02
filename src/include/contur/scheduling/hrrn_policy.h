@@ -23,9 +23,7 @@ namespace contur {
 
         /// @brief HRRN is non-preemptive once process is running.
         [[nodiscard]] bool shouldPreempt(
-            const SchedulingProcessSnapshot &running,
-            const SchedulingProcessSnapshot &candidate,
-            const IClock &clock
+            const SchedulingProcessSnapshot &running, const SchedulingProcessSnapshot &candidate, const IClock &clock
         ) const override;
     };
 

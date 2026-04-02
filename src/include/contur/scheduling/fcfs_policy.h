@@ -23,9 +23,7 @@ namespace contur {
 
         /// @brief FCFS never preempts the currently running process.
         [[nodiscard]] bool shouldPreempt(
-            const SchedulingProcessSnapshot &running,
-            const SchedulingProcessSnapshot &candidate,
-            const IClock &clock
+            const SchedulingProcessSnapshot &running, const SchedulingProcessSnapshot &candidate, const IClock &clock
         ) const override;
     };
 

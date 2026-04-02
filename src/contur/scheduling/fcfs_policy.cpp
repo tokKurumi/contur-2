@@ -14,8 +14,8 @@ namespace contur {
         return "FCFS";
     }
 
-    ProcessId FcfsPolicy::selectNext(const std::vector<SchedulingProcessSnapshot> &readyQueue, const IClock &clock)
-        const
+    ProcessId
+    FcfsPolicy::selectNext(const std::vector<SchedulingProcessSnapshot> &readyQueue, const IClock &clock) const
     {
         (void)clock;
         if (readyQueue.empty())
@@ -35,9 +35,7 @@ namespace contur {
     }
 
     bool FcfsPolicy::shouldPreempt(
-        const SchedulingProcessSnapshot &running,
-        const SchedulingProcessSnapshot &candidate,
-        const IClock &clock
+        const SchedulingProcessSnapshot &running, const SchedulingProcessSnapshot &candidate, const IClock &clock
     ) const
     {
         (void)running;

@@ -5,9 +5,9 @@
 
 #include <algorithm>
 #include <atomic>
-#include <cstdint>
 #include <condition_variable>
 #include <cstddef>
+#include <cstdint>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -184,10 +184,7 @@ namespace contur {
         }
 
         void runDispatch(
-            std::size_t workerIndex,
-            std::size_t workerCount,
-            const DispatcherLanes &jobLanes,
-            std::size_t jobTickBudget
+            std::size_t workerIndex, std::size_t workerCount, const DispatcherLanes &jobLanes, std::size_t jobTickBudget
         )
         {
             if (config.deterministicMode || !config.workStealingEnabled)

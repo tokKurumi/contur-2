@@ -9,16 +9,16 @@
 #include <optional>
 #include <unordered_map>
 
-namespace {
-
-    [[nodiscard]] bool isHigherPriority(contur::PriorityLevel lhs, contur::PriorityLevel rhs) noexcept
-    {
-        return static_cast<std::int8_t>(lhs) < static_cast<std::int8_t>(rhs);
-    }
-
-} // namespace
-
 namespace contur {
+
+    namespace {
+
+        [[nodiscard]] bool isHigherPriority(contur::PriorityLevel lhs, contur::PriorityLevel rhs) noexcept
+        {
+            return static_cast<std::int8_t>(lhs) < static_cast<std::int8_t>(rhs);
+        }
+
+    } // namespace
 
     struct Mutex::Impl
     {
@@ -63,7 +63,8 @@ namespace contur {
             {
                 ensurePriorityRegistered(waiter);
                 PriorityLevel waiterPriority = effectivePriorityByPid[waiter];
-                if (!highestWaiterPriority.has_value() || isHigherPriority(waiterPriority, highestWaiterPriority.value()))
+                if (!highestWaiterPriority.has_value() ||
+                    isHigherPriority(waiterPriority, highestWaiterPriority.value()))
                 {
                     highestWaiterPriority = waiterPriority;
                 }

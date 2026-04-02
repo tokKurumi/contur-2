@@ -121,8 +121,7 @@ namespace {
         }
 
         void tick() override
-        {
-        }
+        {}
 
         [[nodiscard]] std::size_t processCount() const noexcept override
         {
@@ -273,9 +272,8 @@ TEST(KernelApiIntegrationTest, SyscallFailsAfterProcessTermination)
 
 TEST(KernelApiIntegrationTest, DispatcherErrorPropagatesThroughKernelTick)
 {
-    auto buildResult = buildStrictKernel(
-        nullptr, nullptr, std::make_unique<ErrorDispatcher>(ErrorCode::ResourceBusy), 2
-    );
+    auto buildResult =
+        buildStrictKernel(nullptr, nullptr, std::make_unique<ErrorDispatcher>(ErrorCode::ResourceBusy), 2);
     ASSERT_TRUE(buildResult.isOk());
     auto kernel = std::move(buildResult).value();
 

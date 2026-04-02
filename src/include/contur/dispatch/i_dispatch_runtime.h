@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "contur/core/error.h"
+
 #include "contur/dispatch/threading_config.h"
 
 namespace contur {

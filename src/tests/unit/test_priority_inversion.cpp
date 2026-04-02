@@ -4,7 +4,6 @@
 #include <gtest/gtest.h>
 
 #include "contur/process/priority.h"
-
 #include "contur/sync/mutex.h"
 #include "contur/sync/semaphore.h"
 

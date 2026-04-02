@@ -45,9 +45,7 @@ namespace contur {
     }
 
     bool HrrnPolicy::shouldPreempt(
-        const SchedulingProcessSnapshot &running,
-        const SchedulingProcessSnapshot &candidate,
-        const IClock &clock
+        const SchedulingProcessSnapshot &running, const SchedulingProcessSnapshot &candidate, const IClock &clock
     ) const
     {
         (void)running;

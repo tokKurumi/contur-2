@@ -7,9 +7,9 @@
 #include <string_view>
 #include <vector>
 
-#include "contur/process/priority.h"
-
 #include "contur/core/types.h"
+
+#include "contur/process/priority.h"
 
 namespace contur {
 
@@ -52,9 +52,7 @@ namespace contur {
         /// @param candidate Candidate ready process chosen by selectNext().
         /// @param clock Simulation clock.
         [[nodiscard]] virtual bool shouldPreempt(
-            const SchedulingProcessSnapshot &running,
-            const SchedulingProcessSnapshot &candidate,
-            const IClock &clock
+            const SchedulingProcessSnapshot &running, const SchedulingProcessSnapshot &candidate, const IClock &clock
         ) const = 0;
     };
 

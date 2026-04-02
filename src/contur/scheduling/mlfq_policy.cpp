@@ -77,9 +77,7 @@ namespace contur {
     }
 
     bool MlfqPolicy::shouldPreempt(
-        const SchedulingProcessSnapshot &running,
-        const SchedulingProcessSnapshot &candidate,
-        const IClock &clock
+        const SchedulingProcessSnapshot &running, const SchedulingProcessSnapshot &candidate, const IClock &clock
     ) const
     {
         std::size_t runningLevel = priorityToLevel(running, levelTimeSlices_.size());

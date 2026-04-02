@@ -90,8 +90,8 @@ namespace {
             return "AlwaysUnknownPolicy";
         }
 
-        ProcessId selectNext(const std::vector<SchedulingProcessSnapshot> &readyQueue, const IClock &clock)
-            const override
+        ProcessId
+        selectNext(const std::vector<SchedulingProcessSnapshot> &readyQueue, const IClock &clock) const override
         {
             (void)readyQueue;
             (void)clock;
@@ -99,9 +99,7 @@ namespace {
         }
 
         bool shouldPreempt(
-            const SchedulingProcessSnapshot &running,
-            const SchedulingProcessSnapshot &candidate,
-            const IClock &clock
+            const SchedulingProcessSnapshot &running, const SchedulingProcessSnapshot &candidate, const IClock &clock
         ) const override
         {
             (void)running;

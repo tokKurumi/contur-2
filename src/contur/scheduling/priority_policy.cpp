@@ -15,7 +15,8 @@ namespace contur {
         {
             if (lhs.effectivePriority != rhs.effectivePriority)
             {
-                return static_cast<std::int8_t>(lhs.effectivePriority) < static_cast<std::int8_t>(rhs.effectivePriority);
+                return static_cast<std::int8_t>(lhs.effectivePriority) <
+                       static_cast<std::int8_t>(rhs.effectivePriority);
             }
             if (lhs.nice != rhs.nice)
             {
@@ -39,16 +40,14 @@ namespace contur {
             return INVALID_PID;
         }
 
-        auto selected = std::min_element(
-            readyQueue.begin(), readyQueue.end(), [](const auto &a, const auto &b) { return betterPriority(a, b); }
-        );
+        auto selected = std::min_element(readyQueue.begin(), readyQueue.end(), [](const auto &a, const auto &b) {
+            return betterPriority(a, b);
+        });
         return selected->pid;
     }
 
     bool PriorityPolicy::shouldPreempt(
-        const SchedulingProcessSnapshot &running,
-        const SchedulingProcessSnapshot &candidate,
-        const IClock &clock
+        const SchedulingProcessSnapshot &running, const SchedulingProcessSnapshot &candidate, const IClock &clock
     ) const
     {
         (void)clock;
