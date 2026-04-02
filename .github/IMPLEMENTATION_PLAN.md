@@ -557,7 +557,7 @@ Follow steps in order; do not skip test gates.
 
 ---
 
-## Test Statistics (Phases 0–9)
+## Test Statistics (Phases 0–11)
 
 | Phase | Test File | Test Suites | Tests |
 |---|---|---|---|
@@ -586,12 +586,12 @@ Follow steps in order; do not skip test gates.
 | 6 | `test_priority_policy.cpp` | PriorityPolicyTest | 2 |
 | 6 | `test_mlfq.cpp` | MlfqPolicyTest | 2 |
 | 6 | `test_statistics.cpp` | StatisticsTest | 3 |
-| 6 | `test_scheduler.cpp` | SchedulerTest | 3 |
+| 6 | `test_scheduler.cpp` | SchedulerTest | 5 |
 | 7 | `test_mutex.cpp` | MutexTest | 9 |
 | 7 | `test_semaphore.cpp` | SemaphoreTest | 7 |
 | 7 | `test_deadlock_detector.cpp` | DeadlockDetectorTest | 15 |
-| 7 | `test_dispatcher.cpp` | DispatcherTest | 12 |
-| 7 | `test_mp_dispatcher.cpp` | MPDispatcherTest | 8 |
+| 7 | `test_dispatcher.cpp` | DispatcherTest | 14 |
+| 7 | `test_mp_dispatcher.cpp` | DispatchRuntimeTest, MPDispatcherTest | 19 |
 | 8 | `test_pipe.cpp` | PipeTest | 6 |
 | 8 | `test_shared_memory.cpp` | SharedMemoryTest | 7 |
 | 8 | `test_message_queue.cpp` | MessageQueueTest | 7 |
@@ -599,7 +599,19 @@ Follow steps in order; do not skip test gates.
 | 8 | `test_syscall_table.cpp` | SyscallTableTest | 6 |
 | 9 | `test_block_allocator.cpp` | BlockAllocatorTest | 6 |
 | 9 | `test_simple_fs.cpp` | SimpleFSTest | 8 |
-| | | **47 suites** | **456** |
+| 10 | `test_kernel_builder.cpp` | KernelBuilderTest | 13 |
+| 10 | `test_kernel_api.cpp` | KernelApiIntegrationTest | 4 |
+| 11 | `test_threading_config.cpp` | ThreadingConfigTest | 5 |
+| 11 | `test_dispatcher_pool.cpp` | DispatcherPoolTest | 7 |
+| 11 | `test_scheduler_concurrent.cpp` | SchedulerConcurrentTest | 6 |
+| 11 | `test_policy_contracts.cpp` | PolicyContractTest | 3 |
+| 11 | `test_sync_layers.cpp` | SyncLayerTest | 3 |
+| 11 | `test_priority_inversion.cpp` | PriorityInversionTest | 3 |
+| 11 | `test_resource_contention.cpp` | ResourceContentionTest | 5 |
+| 11 | `test_deadlock_detector_concurrent.cpp` | DeadlockDetectorConcurrentTest | 4 |
+| 11 | `test_deterministic_multithread.cpp` | DeterministicMultithreadIntegrationTest | 1 |
+| 11 | `test_tracer_concurrent.cpp` | TracerConcurrentTest | 2 |
+| | | **60 suites** | **527** |
 
 ---
 
@@ -612,12 +624,12 @@ Phase 2:  Memory                   ████████████         
 Phase 3:  Process                  ████████             ✅  (5 tasks,  99 tests)
 Phase 4:  CPU + I/O                ████████████         ✅  (7 tasks,  94 tests)
 Phase 5:  Interpreter              ████████             ✅  (3 tasks,  26 tests)
-Phase 6:  Scheduling               ████████████████     ✅  (11 tasks, 21 tests)
-Phase 7:  Dispatch + Sync          ████████████████     ✅  (8 tasks,  51 tests)
+Phase 6:  Scheduling               ████████████████     ✅  (11 tasks, 23 tests)
+Phase 7:  Dispatch + Sync          ████████████████     ✅  (8 tasks,  64 tests)
 Phase 8:  IPC + Syscalls           ████████████         ✅  (8 tasks,  33 tests)
 Phase 9:  File System              ████████████         ✅  (6 tasks,  14 tests)
-Phase 10: Kernel                   ████████
-Phase 11: Host MT Runtime          ████████████
+Phase 10: Kernel                   ████████             ✅  (4 tasks,  17 tests)
+Phase 11: Host MT Runtime          ████████████         ✅  (13 tasks, 39 tests)
 Phase 12: Tracing                  ████████
 Phase 13: TUI                      ████████████
 Phase 14: Demos + CLI              ████████████████
@@ -625,5 +637,5 @@ Phase 15: Native Engine            ████████
 Phase 16: Tests                    ████████████
 Phase 17: Docs + CI                ████████
 
-Total: 456 unit tests passing (Phases 0–9)
+Total: 527 tests passing (Phases 0–11)
 ```
