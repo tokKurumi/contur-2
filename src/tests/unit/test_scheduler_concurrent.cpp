@@ -117,9 +117,7 @@ TEST(SchedulerConcurrentTest, StealMovesWorkToThiefLaneAndMaintainsUniqueness)
     EXPECT_EQ(all[1], 2u);
 }
 
-// ---------------------------------------------------------------------------
 // Real-thread concurrency tests
-// ---------------------------------------------------------------------------
 
 /// Enqueue 200 unique processes from 4 threads simultaneously and verify that
 /// all PIDs end up in the scheduler exactly once with no data races.
