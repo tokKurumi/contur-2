@@ -44,6 +44,7 @@ namespace contur {
         std::unique_ptr<ITraceSink> sink;
         const IClock &traceClock;
         mutable std::mutex sinkMutex;
+        TraceLevel minLevel = TraceLevel::Debug;
 
         static thread_local std::uint32_t depth;
     };
@@ -60,6 +61,11 @@ namespace contur {
 
     void Tracer::trace(const TraceEvent &event)
     {
+        if (static_cast<std::uint8_t>(event.level) < static_cast<std::uint8_t>(impl_->minLevel))
+        {
+            return;
+        }
+
         std::lock_guard<std::mutex> lock(impl_->sinkMutex);
         impl_->sink->write(event);
     }
@@ -82,6 +88,16 @@ namespace contur {
     std::uint32_t Tracer::currentDepth() const noexcept
     {
         return Impl::depth;
+    }
+
+    void Tracer::setMinLevel(TraceLevel level) noexcept
+    {
+        impl_->minLevel = level;
+    }
+
+    TraceLevel Tracer::minLevel() const noexcept
+    {
+        return impl_->minLevel;
     }
 
     const IClock &Tracer::clock() const noexcept

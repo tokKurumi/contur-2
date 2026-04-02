@@ -8,6 +8,7 @@
 #include <string_view>
 
 #include "contur/core/types.h"
+#include "contur/tracing/trace_level.h"
 
 namespace contur {
 
@@ -29,6 +30,9 @@ namespace contur {
         /// @brief Optional human-readable details payload.
         std::string details;
 
+        /// @brief Event severity level.
+        TraceLevel level = TraceLevel::Info;
+
         /// @brief Current tracer nesting depth.
         std::uint32_t depth = 0;
 
@@ -48,13 +52,15 @@ namespace contur {
     /// @param operation Operation name.
     /// @param details Optional details string.
     /// @param depth Current nesting depth.
+    /// @param level Event severity.
     /// @return Fully initialized TraceEvent value.
     [[nodiscard]] inline TraceEvent makeTraceEvent(
         Tick timestamp,
         std::string_view subsystem,
         std::string_view operation,
         std::string_view details,
-        std::uint32_t depth
+        std::uint32_t depth,
+        TraceLevel level = TraceLevel::Info
     )
     {
         TraceEvent event;
@@ -62,6 +68,7 @@ namespace contur {
         event.subsystem = std::string(subsystem);
         event.operation = std::string(operation);
         event.details = std::string(details);
+        event.level = level;
         event.depth = depth;
         return event;
     }

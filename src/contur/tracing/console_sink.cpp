@@ -26,7 +26,7 @@ namespace contur {
     {
         std::lock_guard<std::mutex> lock(impl_->writeMutex);
 
-        std::cout << "[T=" << event.timestamp << "] ";
+        std::cout << "[T=" << event.timestamp << "][" << traceLevelToString(event.level) << "] ";
         for (std::uint32_t i = 0; i < event.depth; ++i)
         {
             std::cout << "  ";

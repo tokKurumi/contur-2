@@ -82,3 +82,22 @@ TEST(TracerTest, NullTracerRemainsNoOp)
     EXPECT_EQ(tracer.currentDepth(), 0u);
     EXPECT_EQ(tracer.clock().now(), clock.now());
 }
+
+TEST(TracerTest, MinLevelFiltersLowerSeverityEvents)
+{
+    SimulationClock clock;
+
+    auto sink = std::make_unique<BufferSink>();
+    BufferSink *sinkRaw = sink.get();
+    Tracer tracer(std::move(sink), clock);
+    tracer.setMinLevel(TraceLevel::Warn);
+
+    tracer.trace(makeTraceEvent(clock.now(), "Kernel", "debug-event", "", 0, TraceLevel::Debug));
+    tracer.trace(makeTraceEvent(clock.now(), "Kernel", "warn-event", "", 0, TraceLevel::Warn));
+    tracer.trace(makeTraceEvent(clock.now(), "Kernel", "error-event", "", 0, TraceLevel::Error));
+
+    auto events = sinkRaw->snapshot();
+    ASSERT_EQ(events.size(), 2u);
+    EXPECT_EQ(events[0].operation, "warn-event");
+    EXPECT_EQ(events[1].operation, "error-event");
+}

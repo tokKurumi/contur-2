@@ -38,7 +38,7 @@ namespace contur {
             return;
         }
 
-        impl_->stream << "[T=" << event.timestamp << "] ";
+        impl_->stream << "[T=" << event.timestamp << "][" << traceLevelToString(event.level) << "] ";
         for (std::uint32_t i = 0; i < event.depth; ++i)
         {
             impl_->stream << "  ";

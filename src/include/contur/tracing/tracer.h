@@ -50,6 +50,12 @@ namespace contur {
         /// @copydoc ITracer::currentDepth
         [[nodiscard]] std::uint32_t currentDepth() const noexcept override;
 
+        /// @copydoc ITracer::setMinLevel
+        void setMinLevel(TraceLevel level) noexcept override;
+
+        /// @copydoc ITracer::minLevel
+        [[nodiscard]] TraceLevel minLevel() const noexcept override;
+
         /// @copydoc ITracer::clock
         [[nodiscard]] const IClock &clock() const noexcept override;
 

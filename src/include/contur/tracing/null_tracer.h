@@ -56,6 +56,18 @@ namespace contur {
             return 0;
         }
 
+        /// @copydoc ITracer::setMinLevel
+        void setMinLevel(TraceLevel level) noexcept override
+        {
+            (void)level;
+        }
+
+        /// @copydoc ITracer::minLevel
+        [[nodiscard]] TraceLevel minLevel() const noexcept override
+        {
+            return TraceLevel::Error;
+        }
+
         /// @copydoc ITracer::clock
         [[nodiscard]] const IClock &clock() const noexcept override
         {

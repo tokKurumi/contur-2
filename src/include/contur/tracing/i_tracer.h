@@ -35,6 +35,13 @@ namespace contur {
         /// @return Current scope depth.
         [[nodiscard]] virtual std::uint32_t currentDepth() const noexcept = 0;
 
+        /// @brief Sets minimum event level that will be emitted.
+        /// @param level Minimum accepted level.
+        virtual void setMinLevel(TraceLevel level) noexcept = 0;
+
+        /// @brief Returns minimum event level that will be emitted.
+        [[nodiscard]] virtual TraceLevel minLevel() const noexcept = 0;
+
         /// @brief Returns tracer clock reference.
         /// @return Clock used for timestamping events.
         [[nodiscard]] virtual const IClock &clock() const noexcept = 0;
