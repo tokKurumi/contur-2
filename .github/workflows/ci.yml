@@ -54,14 +54,18 @@ jobs:
           g++ --version
 
       - name: Configure
+        working-directory: src
         run: cmake --preset ${{ matrix.configure_preset }}
 
       - name: Build
+        working-directory: src
         run: cmake --build --preset ${{ matrix.build_preset }} 2>&1 | tee build_output.txt
 
       - name: Show warnings
         if: always()
+        working-directory: src
         run: grep -i "warning:" build_output.txt || echo "No warnings found"
 
       - name: Run tests
+        working-directory: src
         run: ctest --preset ${{ matrix.test_preset }} --output-on-failure
