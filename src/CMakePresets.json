@@ -21,20 +21,26 @@
             }
         },
         {
-            "name": "tsan",
-            "displayName": "TSAN (Clang)",
-            "inherits": "base-debug",
-            "binaryDir": "${sourceDir}/build/tsan",
+            "name": "base-tsan-debug",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/tsan-debug",
             "cacheVariables": {
-                "CMAKE_C_COMPILER": "clang",
-                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CONTUR2_ENABLE_TRACING": "ON",
                 "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic -fsanitize=thread",
                 "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=thread"
-            },
-            "condition": {
-                "type": "notEquals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "base-tsan-release",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/tsan-release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic -fsanitize=thread",
+                "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=thread"
             }
         },
 
@@ -132,13 +138,107 @@
                 "lhs": "${hostSystemName}",
                 "rhs": "Windows"
             }
+        },
+
+        {
+            "name": "tsan-debug",
+            "displayName": "TSAN Debug (Clang)",
+            "inherits": "base-tsan-debug",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++"
+            },
+            "condition": {
+                "type": "notEquals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "tsan-release",
+            "displayName": "TSAN Release (Clang)",
+            "inherits": "base-tsan-release",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++"
+            },
+            "condition": {
+                "type": "notEquals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "tsan-gcc-debug",
+            "displayName": "TSAN Debug (GCC)",
+            "inherits": "base-tsan-debug",
+            "binaryDir": "${sourceDir}/build/tsan-gcc-debug",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++"
+            },
+            "condition": {
+                "type": "notEquals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "tsan-gcc-release",
+            "displayName": "TSAN Release (GCC)",
+            "inherits": "base-tsan-release",
+            "binaryDir": "${sourceDir}/build/tsan-gcc-release",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++"
+            },
+            "condition": {
+                "type": "notEquals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "tsan-win-debug",
+            "displayName": "TSAN Debug (clang++)",
+            "inherits": "base-tsan-debug",
+            "binaryDir": "${sourceDir}/build/tsan-win-debug",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "tsan-win-release",
+            "displayName": "TSAN Release (clang++)",
+            "inherits": "base-tsan-release",
+            "binaryDir": "${sourceDir}/build/tsan-win-release",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
         }
     ],
 
     "buildPresets": [
         { "name": "debug", "configurePreset": "debug" },
         { "name": "release", "configurePreset": "release" },
-        { "name": "tsan", "configurePreset": "tsan" },
+        { "name": "tsan-debug", "configurePreset": "tsan-debug" },
+        { "name": "tsan-release", "configurePreset": "tsan-release" },
+        { "name": "tsan-gcc-debug", "configurePreset": "tsan-gcc-debug" },
+        { "name": "tsan-gcc-release", "configurePreset": "tsan-gcc-release" },
+        { "name": "tsan-win-debug", "configurePreset": "tsan-win-debug" },
+        { "name": "tsan-win-release", "configurePreset": "tsan-win-release" },
         { "name": "gcc-debug", "configurePreset": "gcc-debug" },
         { "name": "gcc-release", "configurePreset": "gcc-release" },
         { "name": "win-debug", "configurePreset": "win-debug" },
@@ -157,8 +257,33 @@
             "output": { "outputOnFailure": true }
         },
         {
-            "name": "tsan",
-            "configurePreset": "tsan",
+            "name": "tsan-debug",
+            "configurePreset": "tsan-debug",
+            "output": { "outputOnFailure": true }
+        },
+        {
+            "name": "tsan-release",
+            "configurePreset": "tsan-release",
+            "output": { "outputOnFailure": true }
+        },
+        {
+            "name": "tsan-gcc-debug",
+            "configurePreset": "tsan-gcc-debug",
+            "output": { "outputOnFailure": true }
+        },
+        {
+            "name": "tsan-gcc-release",
+            "configurePreset": "tsan-gcc-release",
+            "output": { "outputOnFailure": true }
+        },
+        {
+            "name": "tsan-win-debug",
+            "configurePreset": "tsan-win-debug",
+            "output": { "outputOnFailure": true }
+        },
+        {
+            "name": "tsan-win-release",
+            "configurePreset": "tsan-win-release",
             "output": { "outputOnFailure": true }
         },
         {
