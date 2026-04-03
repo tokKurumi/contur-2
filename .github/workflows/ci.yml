@@ -44,7 +44,7 @@ jobs:
             test_preset: tsan-gcc-release
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install dependencies
         run: |
