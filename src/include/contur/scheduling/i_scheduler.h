@@ -4,6 +4,7 @@
 #pragma once
 
 #include <memory>
+#include <string_view>
 #include <vector>
 
 #include "contur/core/error.h"
@@ -118,6 +119,9 @@ namespace contur {
         /// @param policy New scheduling policy instance.
         /// @return Ok on success; InvalidState if policy is null.
         [[nodiscard]] virtual Result<void> setPolicy(std::unique_ptr<ISchedulingPolicy> policy) = 0;
+
+        /// @brief Returns active policy name or "Unconfigured".
+        [[nodiscard]] virtual std::string_view policyName() const noexcept = 0;
     };
 
 } // namespace contur

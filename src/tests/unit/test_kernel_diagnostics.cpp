@@ -2,6 +2,7 @@
 /// @brief Unit tests for KernelDiagnostics adapter.
 
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <utility>
@@ -122,8 +123,33 @@ TEST(KernelDiagnosticsTest, CaptureSnapshotReturnsKernelSnapshotAsDiagnosticsPay
     kernelSnapshot.readyCount = 2;
     kernelSnapshot.blockedCount = 1;
     kernelSnapshot.runningPids = {10, 11};
+    kernelSnapshot.readyQueue = {3, 4};
+    kernelSnapshot.blockedQueue = {8};
+    kernelSnapshot.perLaneReadyQueues = {{3}, {4}};
+    kernelSnapshot.policyName = "Fcfs";
+
+    kernelSnapshot.processes = {
+        KernelProcessSnapshot{
+            .id = 10,
+            .name = "p10",
+            .state = ProcessState::Running,
+            .cpuTime = 5,
+            .laneIndex = std::nullopt,
+        },
+        KernelProcessSnapshot{
+            .id = 11,
+            .name = "p11",
+            .state = ProcessState::Ready,
+            .cpuTime = 3,
+            .laneIndex = std::nullopt,
+        },
+    };
+
     kernelSnapshot.totalVirtualSlots = 32;
     kernelSnapshot.freeVirtualSlots = 12;
+    kernelSnapshot.totalFrames = 128;
+    kernelSnapshot.freeFrames = 120;
+    kernelSnapshot.frameOwners = {10, std::nullopt};
 
     FakeKernelForDiagnostics kernel(kernelSnapshot);
     KernelDiagnostics diagnostics(kernel);
@@ -138,6 +164,18 @@ TEST(KernelDiagnosticsTest, CaptureSnapshotReturnsKernelSnapshotAsDiagnosticsPay
     EXPECT_EQ(diag.kernel.readyCount, 2u);
     EXPECT_EQ(diag.kernel.blockedCount, 1u);
     EXPECT_EQ(diag.kernel.runningPids, kernelSnapshot.runningPids);
+    EXPECT_EQ(diag.kernel.readyQueue, kernelSnapshot.readyQueue);
+    EXPECT_EQ(diag.kernel.blockedQueue, kernelSnapshot.blockedQueue);
+    EXPECT_EQ(diag.kernel.perLaneReadyQueues, kernelSnapshot.perLaneReadyQueues);
+    EXPECT_EQ(diag.kernel.policyName, "Fcfs");
+    ASSERT_EQ(diag.kernel.processes.size(), 2u);
+    EXPECT_EQ(diag.kernel.processes[0].id, 10u);
+    EXPECT_EQ(diag.kernel.processes[1].id, 11u);
     EXPECT_EQ(diag.kernel.totalVirtualSlots, 32u);
     EXPECT_EQ(diag.kernel.freeVirtualSlots, 12u);
+    ASSERT_TRUE(diag.kernel.totalFrames.has_value());
+    ASSERT_TRUE(diag.kernel.freeFrames.has_value());
+    EXPECT_EQ(diag.kernel.totalFrames.value(), 128u);
+    EXPECT_EQ(diag.kernel.freeFrames.value(), 120u);
+    ASSERT_EQ(diag.kernel.frameOwners.size(), 2u);
 }

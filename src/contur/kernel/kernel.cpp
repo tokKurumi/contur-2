@@ -3,6 +3,7 @@
 
 #include "contur/kernel/kernel.h"
 
+#include <algorithm>
 #include <functional>
 #include <unordered_map>
 #include <utility>
@@ -314,9 +315,51 @@ namespace contur {
 
         if (impl_->scheduler)
         {
-            out.readyCount = impl_->scheduler->getQueueSnapshot().size();
-            out.blockedCount = impl_->scheduler->getBlockedSnapshot().size();
+            out.readyQueue = impl_->scheduler->getQueueSnapshot();
+            out.blockedQueue = impl_->scheduler->getBlockedSnapshot();
+            out.readyCount = out.readyQueue.size();
+            out.blockedCount = out.blockedQueue.size();
             out.runningPids = impl_->scheduler->runningProcesses();
+            out.perLaneReadyQueues = impl_->scheduler->getPerLaneQueueSnapshot();
+            out.policyName = std::string(impl_->scheduler->policyName());
+
+            std::unordered_map<ProcessId, std::size_t> laneByPid;
+            for (std::size_t lane = 0; lane < out.perLaneReadyQueues.size(); ++lane)
+            {
+                for (ProcessId pid : out.perLaneReadyQueues[lane])
+                {
+                    laneByPid[pid] = lane;
+                }
+            }
+
+            out.processes.reserve(impl_->processRefs.size());
+            for (const auto &[pid, processRef] : impl_->processRefs)
+            {
+                const ProcessImage &process = processRef.get();
+                const PCB &pcb = process.pcb();
+
+                KernelProcessSnapshot row;
+                row.id = pid;
+                row.name = std::string(pcb.name());
+                row.state = pcb.state();
+                row.basePriority = pcb.priority().base;
+                row.effectivePriority = pcb.priority().effective;
+                row.nice = pcb.priority().nice;
+                row.cpuTime = pcb.timing().totalCpuTime;
+
+                if (auto laneIt = laneByPid.find(pid); laneIt != laneByPid.end())
+                {
+                    row.laneIndex = laneIt->second;
+                }
+
+                out.processes.push_back(std::move(row));
+            }
+
+            std::sort(
+                out.processes.begin(),
+                out.processes.end(),
+                [](const KernelProcessSnapshot &lhs, const KernelProcessSnapshot &rhs) { return lhs.id < rhs.id; }
+            );
         }
 
         if (impl_->virtualMemory)

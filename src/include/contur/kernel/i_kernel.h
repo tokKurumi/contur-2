@@ -4,8 +4,10 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -16,6 +18,7 @@
 
 #include "contur/arch/block.h"
 #include "contur/process/priority.h"
+#include "contur/process/state.h"
 #include "contur/syscall/syscall_ids.h"
 
 namespace contur {
@@ -42,6 +45,34 @@ namespace contur {
         Tick arrivalTime = 0;
     };
 
+    /// @brief Lightweight process row for diagnostics and TUI rendering.
+    struct KernelProcessSnapshot
+    {
+        /// @brief Process identifier.
+        ProcessId id = INVALID_PID;
+
+        /// @brief Process name.
+        std::string name;
+
+        /// @brief Current process lifecycle state.
+        ProcessState state = ProcessState::New;
+
+        /// @brief Base/static priority.
+        PriorityLevel basePriority = PriorityLevel::Normal;
+
+        /// @brief Effective/dynamic priority.
+        PriorityLevel effectivePriority = PriorityLevel::Normal;
+
+        /// @brief Nice value used for fine-grained priority adjustments.
+        std::int32_t nice = NICE_DEFAULT;
+
+        /// @brief Total CPU time consumed by process.
+        Tick cpuTime = 0;
+
+        /// @brief Optional scheduler lane ownership metadata.
+        std::optional<std::size_t> laneIndex;
+    };
+
     /// @brief Lightweight kernel state snapshot for UI and diagnostics.
     ///
     /// This snapshot is intentionally runtime-agnostic: it exposes kernel-facing
@@ -63,11 +94,35 @@ namespace contur {
         /// @brief Process IDs currently running across dispatcher/scheduler lanes.
         std::vector<ProcessId> runningPids;
 
+        /// @brief Ready queue PID snapshot.
+        std::vector<ProcessId> readyQueue;
+
+        /// @brief Blocked queue PID snapshot.
+        std::vector<ProcessId> blockedQueue;
+
+        /// @brief Per-lane ready queue snapshots.
+        std::vector<std::vector<ProcessId>> perLaneReadyQueues;
+
+        /// @brief Active scheduling policy name.
+        std::string policyName;
+
+        /// @brief Process rows for UI tables.
+        std::vector<KernelProcessSnapshot> processes;
+
         /// @brief Total number of virtual memory slots.
         std::size_t totalVirtualSlots = 0;
 
         /// @brief Number of free virtual memory slots.
         std::size_t freeVirtualSlots = 0;
+
+        /// @brief Optional total number of physical frames.
+        std::optional<std::size_t> totalFrames;
+
+        /// @brief Optional free physical frame count.
+        std::optional<std::size_t> freeFrames;
+
+        /// @brief Optional frame ownership map (one entry per frame).
+        std::vector<std::optional<ProcessId>> frameOwners;
     };
 
     /// @brief Function signature used for syscall registration.

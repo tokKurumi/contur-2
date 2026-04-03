@@ -88,7 +88,7 @@ namespace contur {
         [[nodiscard]] Result<void> setPolicy(std::unique_ptr<ISchedulingPolicy> policy) override;
 
         /// @brief Returns active policy name.
-        [[nodiscard]] std::string_view policyName() const noexcept;
+        [[nodiscard]] std::string_view policyName() const noexcept override;
 
         private:
         struct Impl;
