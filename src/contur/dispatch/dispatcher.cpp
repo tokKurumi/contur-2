@@ -8,6 +8,7 @@
 #include <unordered_map>
 
 #include "contur/core/clock.h"
+
 #include "contur/execution/execution_context.h"
 #include "contur/execution/i_execution_engine.h"
 #include "contur/memory/i_virtual_memory.h"

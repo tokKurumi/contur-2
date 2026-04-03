@@ -1,11 +1,10 @@
 /// @file kernel_read_model.cpp
 /// @brief KernelReadModel implementation.
 
-#include "contur/tui/i_kernel_read_model.h"
-
 #include <utility>
 
 #include "contur/kernel/i_kernel_diagnostics.h"
+#include "contur/tui/i_kernel_read_model.h"
 
 namespace contur {
 

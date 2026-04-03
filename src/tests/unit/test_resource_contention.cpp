@@ -26,6 +26,7 @@
 #include <gtest/gtest.h>
 
 #include "contur/core/clock.h"
+
 #include "contur/arch/instruction.h"
 #include "contur/io/device_manager.h"
 #include "contur/io/network_device.h"

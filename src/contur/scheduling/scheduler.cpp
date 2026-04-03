@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "contur/core/clock.h"
+
 #include "contur/process/pcb.h"
 #include "contur/process/state.h"
 #include "contur/scheduling/i_scheduling_policy.h"
@@ -404,14 +405,11 @@ namespace contur {
 
         auto selected = impl_->selectNextForLane_nolock(laneIndex, clock);
         CONTUR_TRACE_BLOCK(
-            if (selected.isOk())
-            {
+            if (selected.isOk()) {
                 CONTUR_TRACE(
                     impl_->tracer, "Scheduler", "select.ok", std::string("pid=") + std::to_string(selected.value())
                 );
-            }
-            else
-            {
+            } else {
                 CONTUR_TRACE_L(
                     impl_->tracer,
                     TraceLevel::Debug,
@@ -506,18 +504,11 @@ namespace contur {
         CONTUR_TRACE(impl_->tracer, "Scheduler", "block.request", std::string("pid=") + std::to_string(pid));
 
         auto blocked = impl_->blockProcess_nolock(pid, currentTick);
-        CONTUR_TRACE_BLOCK(
-            if (blocked.isError())
-            {
-                CONTUR_TRACE_L(
-                    impl_->tracer,
-                    TraceLevel::Warn,
-                    "Scheduler",
-                    "block.error",
-                    errorCodeToString(blocked.errorCode())
-                );
-            }
-        );
+        CONTUR_TRACE_BLOCK(if (blocked.isError()) {
+            CONTUR_TRACE_L(
+                impl_->tracer, TraceLevel::Warn, "Scheduler", "block.error", errorCodeToString(blocked.errorCode())
+            );
+        });
         return blocked;
     }
 

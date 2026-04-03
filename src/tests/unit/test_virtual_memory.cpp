@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "contur/core/clock.h"
+
 #include "contur/memory/fifo_replacement.h"
 #include "contur/memory/mmu.h"
 #include "contur/memory/physical_memory.h"

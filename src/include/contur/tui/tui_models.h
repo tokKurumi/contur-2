@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "contur/core/types.h"
+
 #include "contur/process/priority.h"
 #include "contur/process/state.h"
 

@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "contur/core/error.h"
+
 #include "contur/kernel/i_kernel_diagnostics.h"
 #include "contur/tui/tui_models.h"
 

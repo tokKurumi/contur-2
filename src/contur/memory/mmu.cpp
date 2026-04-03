@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "contur/core/clock.h"
+
 #include "contur/memory/i_memory.h"
 #include "contur/memory/page_table.h"
 #include "contur/tracing/i_tracer.h"

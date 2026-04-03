@@ -4,6 +4,7 @@
 #pragma once
 
 #include "contur/core/error.h"
+
 #include "contur/kernel/i_kernel.h"
 
 namespace contur {

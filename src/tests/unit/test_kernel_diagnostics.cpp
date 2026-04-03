@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "contur/core/error.h"
+
 #include "contur/kernel/i_kernel.h"
 #include "contur/kernel/kernel_diagnostics.h"
 

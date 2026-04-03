@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "contur/core/clock.h"
+
 #include "contur/tracing/buffer_sink.h"
 #include "contur/tracing/null_tracer.h"
 #include "contur/tracing/trace_scope.h"

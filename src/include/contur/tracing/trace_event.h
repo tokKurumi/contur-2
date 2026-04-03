@@ -8,6 +8,7 @@
 #include <string_view>
 
 #include "contur/core/types.h"
+
 #include "contur/tracing/trace_level.h"
 
 namespace contur {

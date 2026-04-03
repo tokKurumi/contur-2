@@ -11,6 +11,7 @@
 
 #include "contur/core/clock.h"
 #include "contur/core/error.h"
+
 #include "contur/arch/instruction.h"
 #include "contur/cpu/cpu.h"
 #include "contur/dispatch/dispatcher.h"

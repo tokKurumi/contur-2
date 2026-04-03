@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "contur/core/error.h"
+
 #include "contur/kernel/i_kernel_diagnostics.h"
 #include "contur/tui/i_kernel_read_model.h"
 

@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "contur/core/error.h"
+
 #include "contur/tui/tui_commands.h"
 
 using namespace contur;

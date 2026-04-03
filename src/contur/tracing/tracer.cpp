@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "contur/core/clock.h"
+
 #include "contur/tracing/trace_sink.h"
 
 namespace contur {
