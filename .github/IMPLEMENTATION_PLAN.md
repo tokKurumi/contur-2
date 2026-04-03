@@ -427,7 +427,7 @@ machine, history navigation, and renderer interfaces. View rendering implementat
 
 - UI is **not** part of kernel runtime logic; it is an external consumer module.
 - Kernel remains headless and independently testable without TUI linkage.
-- UI receives read-only data snapshots/adapters from kernel-facing interfaces.
+- UI receives read-only data from a diagnostics module (`IKernelDiagnostics`) and never queries kernel directly.
 - UI history is owned by UI controller/store; kernel does not persist UI playback history.
 - Rewind/forward operates on UI history only; it does **not** roll back kernel state.
 - Any future renderer backend (ANSI/FTXUI/ncurses/etc.) must implement view interfaces only.
@@ -465,6 +465,7 @@ The following contract names are frozen for Phase 13 T1-T3 implementation:
 |---|---|---|
 | T1 Model DTOs | `src/include/contur/tui/tui_models.h` | `TuiProcessSnapshot`, `TuiSchedulerSnapshot`, `TuiMemorySnapshot`, `TuiSnapshot`, `TuiHistoryEntry` |
 | T2 Controller commands | `src/include/contur/tui/tui_commands.h` | `TuiCommandKind`, `TuiCommand`, `TuiPlaybackConfig` |
+| Diagnostics module | `src/include/contur/kernel/i_kernel_diagnostics.h`, `src/include/contur/kernel/kernel_diagnostics.h`, `src/contur/kernel/kernel_diagnostics.cpp` | `KernelDiagnosticsSnapshot`, `IKernelDiagnostics`, `KernelDiagnostics`, `captureSnapshot()` |
 | T3 Read-model adapter | `src/include/contur/tui/i_kernel_read_model.h`, `src/contur/tui/kernel_read_model.cpp` | `IKernelReadModel`, `KernelReadModel`, `captureSnapshot()` |
 
 Naming constraints:
@@ -480,7 +481,7 @@ Naming constraints:
 |---|---|---|---|
 | T1 | `src/include/contur/tui/tui_models.h` | Define immutable UI DTOs: `TuiProcessSnapshot`, `TuiSchedulerSnapshot`, `TuiMemorySnapshot`, `TuiSnapshot`, `TuiHistoryEntry`. | DTO compile checks + serialization/format unit checks |
 | T2 | `src/include/contur/tui/tui_commands.h` | Define controller command contracts: `TuiCommandKind`, `TuiCommand`, `TuiPlaybackConfig` (tick/autoplay/pause/seek with stride `N`). | Command validation tests |
-| T3 | `src/include/contur/tui/i_kernel_read_model.h`, `src/contur/tui/kernel_read_model.cpp` | Add read-model adapter `IKernelReadModel` + `KernelReadModel` with `captureSnapshot()` mapping kernel/scheduler/memory data into `TuiSnapshot`. | `test_tui_read_model.cpp` |
+| T3 | `src/include/contur/kernel/i_kernel_diagnostics.h`, `src/include/contur/kernel/kernel_diagnostics.h`, `src/contur/kernel/kernel_diagnostics.cpp`, `src/include/contur/tui/i_kernel_read_model.h`, `src/contur/tui/kernel_read_model.cpp` | Add diagnostics contracts/adapters and make `KernelReadModel` consume `IKernelDiagnostics` (`TUI <- Diagnostics <- KernelSnapshot`). | `test_kernel_diagnostics.cpp`, `test_tui_read_model.cpp` |
 | T4 | `src/include/contur/tui/history_buffer.h`, `src/contur/tui/history_buffer.cpp` | Add bounded ring buffer with cursor semantics for backward/forward navigation over snapshot history. | `test_tui_history_buffer.cpp` |
 | T5 | `src/include/contur/tui/i_tui_controller.h`, `src/contur/tui/tui_controller.cpp` | Implement MVC controller state machine (Idle/Playing/Paused), tick orchestration, autoplay timing contract, seek APIs. | `test_tui_controller.cpp` |
 | T6 | `src/include/contur/tui/i_renderer.h` + view contracts | Keep renderer/view interfaces backend-agnostic (`render(viewModel)`, `clear()`, panel contracts). | Interface compile checks |
@@ -493,8 +494,9 @@ Naming constraints:
 |---|---|---|---|---|---|
 | 13.1 | Define UI model contracts (`TuiProcessSnapshot`, `TuiSchedulerSnapshot`, `TuiMemorySnapshot`, `TuiSnapshot`, `TuiHistoryEntry`) | `tui/tui_models.h` | — | `test_tui_models.cpp` | |
 | 13.2 | Define controller command contracts (`TuiCommandKind`, `TuiCommand`, `TuiPlaybackConfig`) with step size `N` and autoplay interval | `tui/tui_commands.h` | — | `test_tui_commands.cpp` | |
-| 13.3 | Define kernel read-model interface (`IKernelReadModel`) and adapter naming (`KernelReadModel`, `captureSnapshot()`) | `tui/i_kernel_read_model.h` | — | — | |
-| 13.4 | Implement read-model adapter from kernel/scheduler/memory snapshots | — | `tui/kernel_read_model.cpp` | `test_tui_read_model.cpp` | |
+| 13.3 | Define diagnostics contracts (`KernelDiagnosticsSnapshot`, `IKernelDiagnostics`) | `kernel/i_kernel_diagnostics.h` | — | — | ✅ |
+| 13.4 | Implement diagnostics adapter (`KernelDiagnostics`) over `IKernel::snapshot()` | `kernel/kernel_diagnostics.h` | `kernel/kernel_diagnostics.cpp` | `test_kernel_diagnostics.cpp` | ✅ |
+| 13.5 | Define/implement read-model adapter from diagnostics to TUI snapshots (`IKernelReadModel`, `KernelReadModel`) | `tui/i_kernel_read_model.h` | `tui/kernel_read_model.cpp` | `test_tui_read_model.cpp` | ✅ |
 | 13.5 | Implement bounded UI history buffer with cursor and seek-by-`N` | `tui/history_buffer.h` | `tui/history_buffer.cpp` | `test_tui_history_buffer.cpp` | |
 | 13.6 | Define TUI controller interface (`ITuiController`) | `tui/i_tui_controller.h` | — | — | |
 | 13.7 | Implement controller state machine: `tick(n)`, autoplay, pause, `seekBackward(n)`, `seekForward(n)` | — | `tui/tui_controller.cpp` | `test_tui_controller.cpp` | |

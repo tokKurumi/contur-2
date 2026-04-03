@@ -1209,7 +1209,7 @@ Terminal UI is an **external module** layered on top of the kernel API.
 
 - UI is not part of kernel business/runtime logic.
 - Kernel remains headless and testable without UI dependencies.
-- UI consumes read-only snapshots/adapters and renders them.
+- UI consumes read-only diagnostics contracts/adapters and renders them.
 - UI-owned history supports playback navigation only.
 - Snapshot rewind does **not** imply kernel state rollback.
 
@@ -1223,6 +1223,7 @@ Approved naming for Phase 13 T1-T3:
 
 - T1 (`tui_models.h`): `TuiProcessSnapshot`, `TuiSchedulerSnapshot`, `TuiMemorySnapshot`, `TuiSnapshot`, `TuiHistoryEntry`
 - T2 (`tui_commands.h`): `TuiCommandKind`, `TuiCommand`, `TuiPlaybackConfig`
+- Diagnostics (`i_kernel_diagnostics.h` + `kernel_diagnostics.h/.cpp`): `KernelDiagnosticsSnapshot`, `IKernelDiagnostics`, `KernelDiagnostics`, `captureSnapshot()`
 - T3 (`i_kernel_read_model.h` + `kernel_read_model.cpp`): `IKernelReadModel`, `KernelReadModel`, `captureSnapshot()`
 
 Naming rules:
@@ -1278,6 +1279,12 @@ class IKernelReadModel {
 public:
     virtual ~IKernelReadModel() = default;
     [[nodiscard]] virtual Result<TuiSnapshot> captureSnapshot() const = 0;
+};
+
+class IKernelDiagnostics {
+public:
+    virtual ~IKernelDiagnostics() = default;
+    [[nodiscard]] virtual Result<KernelDiagnosticsSnapshot> captureSnapshot() const = 0;
 };
 
 class IRenderer {
