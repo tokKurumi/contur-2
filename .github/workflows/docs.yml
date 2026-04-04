@@ -26,6 +26,12 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Cache Doxygen bundle
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/contur/doxygen-1.16.1
+          key: ${{ runner.os }}-doxygen-bin-1.16.1
+
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -42,14 +48,19 @@ jobs:
       - name: Install Doxygen
         run: |
           DOXYGEN_VERSION="1.16.1"
+          CACHE_DIR="$HOME/.cache/contur/doxygen-${DOXYGEN_VERSION}"
           ARCHIVE="doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz"
           URL="https://www.doxygen.nl/files/${ARCHIVE}"
 
+          if [[ -x "${CACHE_DIR}/bin/doxygen" ]]; then
+            sudo install -m 0755 "${CACHE_DIR}/bin/doxygen" /usr/local/bin/doxygen
           # Prefer apt with exact version when Ubuntu repositories provide it.
-          if apt-cache madison doxygen | awk '{print $3}' | grep -Eq '^1\.16\.1([.+~:-]|$)'; then
+          elif apt-cache madison doxygen | awk '{print $3}' | grep -Eq '^1\.16\.1([.+~:-]|$)'; then
             sudo apt-get install -y "doxygen=${DOXYGEN_VERSION}*"
           elif wget -nv "${URL}" -O "${ARCHIVE}"; then
             tar -xzf "${ARCHIVE}"
+            mkdir -p "${CACHE_DIR}"
+            cp -a "doxygen-${DOXYGEN_VERSION}/." "${CACHE_DIR}/"
             sudo install -m 0755 "doxygen-${DOXYGEN_VERSION}/bin/doxygen" /usr/local/bin/doxygen
           else
             echo "Exact ${DOXYGEN_VERSION} is unavailable; falling back to apt candidate."
@@ -60,6 +71,14 @@ jobs:
 
       - name: Clean docs build directory
         run: rm -rf src/build
+
+      - name: Cache CMake FetchContent deps
+        uses: actions/cache@v4
+        with:
+          path: src/build/release/_deps
+          key: ${{ runner.os }}-docs-cmake-deps-${{ hashFiles('src/CMakeLists.txt', 'src/docs/doxygen/Doxyfile.in', 'src/docs/doxygen/Doxyfile.override.in') }}
+          restore-keys: |
+            ${{ runner.os }}-docs-cmake-deps-
 
       - name: Configure CMake with Doxygen target
         working-directory: src
