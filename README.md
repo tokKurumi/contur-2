@@ -17,6 +17,12 @@ Contur 2 is an educational OS-kernel simulator written in C++20. The project mod
 - Students and instructors learning OS concepts.
 - Engineers experimenting with scheduling and memory-management algorithms.
 
+## Small Demo
+
+Watch a short demo of Contur 2:
+
+[![Contur 2 Small Demo](https://img.youtube.com/vi/AbwczU97MAA/0.jpg)](https://www.youtube.com/watch?v=AbwczU97MAA)
+
 ## Local Development
 
 This section covers dependencies, build and test workflows for local development.
