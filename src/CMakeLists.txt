@@ -6,6 +6,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+option(CONTUR2_BUILD_TUI "Build TUI layer" ON)
+option(CONTUR2_BUILD_APP "Build application executable" ON)
+
 # Tracing (compile-time toggle)
 option(CONTUR2_ENABLE_TRACING "Enable kernel tracing (Debug only)" OFF)
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -57,31 +60,49 @@ endif()
 #       tui/ftxui_renderer, tui/ftxui_app.
 # Depends on: contur2_lib (kernel) via PUBLIC linkage, and FTXUI.
 # Rule: contur2_lib must NEVER link or include contur2_tui.
-find_package(ftxui REQUIRED)
+if(CONTUR2_BUILD_TUI)
+    # If Conan generators were produced next to the current binary dir,
+    # prepend them so find_package(ftxui) can resolve without extra flags.
+    if(CMAKE_BUILD_TYPE)
+        set(CONTUR2_CONAN_GENERATORS_DIR "${CMAKE_BINARY_DIR}/build/${CMAKE_BUILD_TYPE}/generators")
+        if(EXISTS "${CONTUR2_CONAN_GENERATORS_DIR}")
+            list(PREPEND CMAKE_PREFIX_PATH "${CONTUR2_CONAN_GENERATORS_DIR}")
+            list(PREPEND CMAKE_MODULE_PATH "${CONTUR2_CONAN_GENERATORS_DIR}")
+            message(STATUS "Contur2: using Conan generators from ${CONTUR2_CONAN_GENERATORS_DIR}")
+        endif()
+    endif()
 
-file(GLOB_RECURSE CONTUR2_TUI_SOURCES CONFIGURE_DEPENDS
-    ${CMAKE_CURRENT_SOURCE_DIR}/contur/tui/*.cpp
-)
+    find_package(ftxui REQUIRED)
 
-if(CONTUR2_TUI_SOURCES)
-    add_library(contur2_tui STATIC ${CONTUR2_TUI_SOURCES})
-    target_include_directories(contur2_tui PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
+    file(GLOB_RECURSE CONTUR2_TUI_SOURCES CONFIGURE_DEPENDS
+        ${CMAKE_CURRENT_SOURCE_DIR}/contur/tui/*.cpp
     )
-    target_link_libraries(contur2_tui PUBLIC contur2_lib ftxui::ftxui)
-else()
-    add_library(contur2_tui INTERFACE)
-    target_include_directories(contur2_tui INTERFACE
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
-    )
-    target_link_libraries(contur2_tui INTERFACE contur2_lib ftxui::ftxui)
+
+    if(CONTUR2_TUI_SOURCES)
+        add_library(contur2_tui STATIC ${CONTUR2_TUI_SOURCES})
+        target_include_directories(contur2_tui PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+            $<INSTALL_INTERFACE:include>
+        )
+        target_link_libraries(contur2_tui PUBLIC contur2_lib ftxui::ftxui)
+    else()
+        add_library(contur2_tui INTERFACE)
+        target_include_directories(contur2_tui INTERFACE
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+            $<INSTALL_INTERFACE:include>
+        )
+        target_link_libraries(contur2_tui INTERFACE contur2_lib ftxui::ftxui)
+    endif()
 endif()
 
 # Subdirectories
 add_subdirectory(demos)
-add_subdirectory(app)
+if(CONTUR2_BUILD_APP)
+    if(NOT CONTUR2_BUILD_TUI)
+        message(FATAL_ERROR "CONTUR2_BUILD_APP=ON requires CONTUR2_BUILD_TUI=ON")
+    endif()
+    add_subdirectory(app)
+endif()
 
 # Tests
 option(CONTUR2_BUILD_TESTS "Build unit and integration tests" ON)

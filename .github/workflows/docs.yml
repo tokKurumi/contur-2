@@ -36,6 +36,8 @@ jobs:
             tar \
             ninja-build \
             clang
+          clang++ --version
+          g++ --version
 
       - name: Install Doxygen 1.16.1
         run: |
@@ -49,22 +51,24 @@ jobs:
         run: rm -rf src/build
 
       - name: Configure CMake with Doxygen target
+        working-directory: src
         run: |
-          cmake -G Ninja -S src -B src/build \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_CXX_COMPILER=clang++ \
-            -DCMAKE_C_COMPILER=clang \
+          cmake --preset release \
+            -DCONTUR2_BUILD_TUI=OFF \
+            -DCONTUR2_BUILD_APP=OFF \
             -DCONTUR2_BUILD_TESTS=OFF
 
       - name: Generate Doxygen documentation
-        run: cmake --build src/build --target docs
+        working-directory: src
+        run: cmake --build --preset release --target docs
 
       - name: List generated files
+        working-directory: src
         run: |
           echo "Generated documentation structure:"
-          ls -lah src/build/html/ | head -20
+          ls -lah build/release/html/ | head -20
           echo "Total files:"
-          find src/build/html -type f | wc -l
+          find build/release/html -type f | wc -l
 
       - name: Setup Pages
         uses: actions/configure-pages@v6
@@ -72,7 +76,7 @@ jobs:
       - name: Upload documentation to GitHub Pages
         uses: actions/upload-pages-artifact@v4
         with:
-          path: 'src/build/html'
+          path: 'src/build/release/html'
 
       - name: Deploy to GitHub Pages
         id: deployment
