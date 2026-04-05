@@ -107,8 +107,14 @@ namespace contur {
 
         switch (command.kind)
         {
-        case TuiCommandKind::Tick:
-            return impl_->tickAndCapture(command.step);
+        case TuiCommandKind::Tick: {
+            auto tickResult = impl_->tick(command.step);
+            if (tickResult.isError() && tickResult.errorCode() != ErrorCode::NotFound)
+            {
+                return tickResult;
+            }
+            return impl_->captureSnapshot();
+        }
 
         case TuiCommandKind::AutoPlayStart: {
             TuiPlaybackConfig config = playbackConfigFromCommand(command);

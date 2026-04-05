@@ -271,3 +271,101 @@ TEST(TuiControllerTest, AutoplayTickCallCountStopsOnFirstIdleSignal)
 
     EXPECT_EQ(tickCalls, 1) << "Should stop after first NotFound, not loop 5 times";
 }
+
+// Manual Tick on empty kernel (Bug 3 regression)
+TEST(TuiControllerTest, TickCommandOnEmptyKernelReturnsOk)
+{
+    // Regression: before the fix, dispatching Tick when the kernel had no
+    // processes propagated ErrorCode::NotFound back to the caller, causing the
+    // TUI to surface a spurious error each time the user clicked "tick" after
+    // all processes had finished.
+    Tick kernelTick = 0;
+    FakeKernelReadModel readModel(kernelTick);
+    TuiController controller(readModel, [](std::size_t) { return Result<void>::error(ErrorCode::NotFound); });
+
+    TuiCommand tickCommand;
+    tickCommand.kind = TuiCommandKind::Tick;
+    tickCommand.step = 1;
+
+    auto result = controller.dispatch(tickCommand);
+    EXPECT_TRUE(result.isOk()) << "Tick on empty kernel must not surface NotFound to the caller";
+}
+
+TEST(TuiControllerTest, TickCommandOnEmptyKernelStillCapturesSnapshot)
+{
+    // Even when the kernel has nothing to do, the current snapshot should be
+    // refreshed so that the TUI continues to reflect the up-to-date state.
+    Tick kernelTick = 0;
+    FakeKernelReadModel readModel(kernelTick);
+    std::size_t capturesBefore = 0;
+
+    TuiController controller(readModel, [](std::size_t) { return Result<void>::error(ErrorCode::NotFound); });
+
+    capturesBefore = readModel.captureCalls();
+
+    TuiCommand tickCommand;
+    tickCommand.kind = TuiCommandKind::Tick;
+    tickCommand.step = 1;
+
+    ASSERT_TRUE(controller.dispatch(tickCommand).isOk());
+    EXPECT_GT(readModel.captureCalls(), capturesBefore);
+}
+
+TEST(TuiControllerTest, TickCommandPropagatesNonNotFoundErrors)
+{
+    // NotFound is swallowed (empty kernel), but other errors (e.g.
+    // InvalidState) must still be propagated so real failures are visible.
+    Tick kernelTick = 0;
+    FakeKernelReadModel readModel(kernelTick);
+    TuiController controller(readModel, [](std::size_t) { return Result<void>::error(ErrorCode::InvalidState); });
+
+    TuiCommand tickCommand;
+    tickCommand.kind = TuiCommandKind::Tick;
+    tickCommand.step = 1;
+
+    auto result = controller.dispatch(tickCommand);
+    ASSERT_TRUE(result.isError());
+    EXPECT_EQ(result.errorCode(), ErrorCode::InvalidState);
+}
+
+TEST(TuiControllerTest, RepeatedTicksOnEmptyKernelNeverError)
+{
+    // Simulates the user repeatedly pressing [t] after all processes finish.
+    Tick kernelTick = 0;
+    FakeKernelReadModel readModel(kernelTick);
+    int tickCalls = 0;
+    TuiController controller(readModel, [&tickCalls](std::size_t) {
+        ++tickCalls;
+        return Result<void>::error(ErrorCode::NotFound);
+    });
+
+    TuiCommand tickCommand;
+    tickCommand.kind = TuiCommandKind::Tick;
+    tickCommand.step = 1;
+
+    for (int i = 0; i < 5; ++i)
+    {
+        EXPECT_TRUE(controller.dispatch(tickCommand).isOk()) << "tick " << i + 1 << " returned error";
+    }
+    EXPECT_EQ(tickCalls, 5);
+}
+
+TEST(TuiControllerTest, AutoplayStillPausesOnEmptyKernelAfterTickFix)
+{
+    // Autoplay must still pause when the kernel returns NotFound, even after
+    // the fix that lets manual Tick silently succeed on an empty kernel.
+    Tick kernelTick = 0;
+    FakeKernelReadModel readModel(kernelTick);
+    TuiController controller(readModel, [](std::size_t) { return Result<void>::error(ErrorCode::NotFound); });
+
+    TuiCommand start;
+    start.kind = TuiCommandKind::AutoPlayStart;
+    start.step = 1;
+    start.intervalMs = 100;
+    ASSERT_TRUE(controller.dispatch(start).isOk());
+    EXPECT_EQ(controller.state(), TuiControllerState::Playing);
+
+    (void)controller.advanceAutoplay(300);
+
+    EXPECT_EQ(controller.state(), TuiControllerState::Paused) << "Autoplay must pause when the kernel is exhausted";
+}

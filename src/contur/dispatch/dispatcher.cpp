@@ -162,9 +162,7 @@ namespace contur {
 
         if (impl_->processes.empty())
         {
-            CONTUR_TRACE_L(
-                impl_->tracer, TraceLevel::Warn, "Dispatcher", "dispatch.error", errorCodeToString(ErrorCode::NotFound)
-            );
+            CONTUR_TRACE_L(impl_->tracer, TraceLevel::Debug, "Dispatcher", "dispatch.idle", "no-processes");
             return Result<void>::error(ErrorCode::NotFound);
         }
 
