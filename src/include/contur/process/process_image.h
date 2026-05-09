@@ -91,6 +91,16 @@ namespace contur {
         /// @param newCode The replacement program.
         void setCode(std::vector<Block> newCode);
 
+        /// @brief Returns the path to the native host executable backing this process,
+        ///        or an empty view when the process is interpreter-backed.
+        ///
+        /// Only consulted by NativeEngine. Interpreter-backed processes leave this empty.
+        [[nodiscard]] std::string_view nativePath() const noexcept;
+
+        /// @brief Sets the native executable path.
+        /// @param path Filesystem path to a host-OS executable. Empty clears the path.
+        void setNativePath(std::string path);
+
         /// @brief Returns the process ID.
         [[nodiscard]] ProcessId id() const noexcept;
 

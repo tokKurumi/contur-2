@@ -35,7 +35,10 @@ namespace contur {
         /// @brief Human-readable process name.
         std::string name;
 
-        /// @brief Program code segment.
+        /// @brief Program code segment. Required for interpreter-backed processes.
+        ///
+        /// For native processes (`!nativePath.empty()`) the kernel injects a single
+        /// `Halt` block as a placeholder so the existing dispatcher invariants hold.
         std::vector<Block> code;
 
         /// @brief Initial scheduling priority.
@@ -43,6 +46,14 @@ namespace contur {
 
         /// @brief Arrival timestamp override. Defaults to current clock tick.
         Tick arrivalTime = 0;
+
+        /// @brief Optional path to a native host executable.
+        ///
+        /// When non-empty, the kernel marks the process as native: the dispatcher's
+        /// execution engine (must be `NativeEngine`) spawns and supervises a real
+        /// host child process at this path. When empty, the process is interpreter-backed
+        /// and `code` is the source of truth.
+        std::string nativePath;
     };
 
     /// @brief Lightweight process row for diagnostics and TUI rendering.

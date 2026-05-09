@@ -10,6 +10,8 @@
 
 #include "contur/core/clock.h"
 
+#include "contur/arch/block.h"
+#include "contur/arch/instruction.h"
 #include "contur/cpu/i_cpu.h"
 #include "contur/dispatch/i_dispatch_runtime.h"
 #include "contur/dispatch/i_dispatcher.h"
@@ -128,7 +130,11 @@ namespace contur {
 
         CONTUR_TRACE_SCOPE(*impl_->tracer, "Kernel", "createProcess");
 
-        if (config.code.empty())
+        // Native processes do not need a Block code segment — the host child is the
+        // source of truth. Interpreter-backed processes still require a non-empty code
+        // vector to keep existing dispatcher/scheduler invariants intact.
+        const bool isNative = !config.nativePath.empty();
+        if (config.code.empty() && !isNative)
         {
             CONTUR_TRACE(
                 *impl_->tracer, "Kernel", "createProcess.error", errorCodeToString(ErrorCode::InvalidArgument)
@@ -157,7 +163,22 @@ namespace contur {
         std::string processName = config.name.empty() ? ("process-" + std::to_string(pid)) : config.name;
         Tick arrival = config.arrivalTime == 0 ? impl_->clock->now() : config.arrivalTime;
 
-        auto process = std::make_unique<ProcessImage>(pid, processName, config.code, config.priority, arrival);
+        // For native-backed processes inject a one-block placeholder code segment so
+        // the dispatcher's virtual-memory bookkeeping (which sizes the slot from
+        // codeSize()) has a non-zero footprint. The block content is never executed:
+        // NativeEngine reads only ProcessImage::nativePath().
+        std::vector<Block> codeSegment = config.code;
+        if (codeSegment.empty() && isNative)
+        {
+            codeSegment.push_back(Block{Instruction::Halt, 0, 0, 0});
+        }
+
+        auto process =
+            std::make_unique<ProcessImage>(pid, processName, std::move(codeSegment), config.priority, arrival);
+        if (isNative)
+        {
+            process->setNativePath(config.nativePath);
+        }
         ProcessImage &processRef = *process;
 
         auto created = impl_->dispatcher->createProcess(std::move(process), impl_->clock->now());

@@ -13,6 +13,7 @@ namespace contur {
         PCB pcb;
         RegisterFile registers;
         std::vector<Block> code;
+        std::string nativePath;
 
         Impl(ProcessId id, std::string name, std::vector<Block> code, Priority priority, Tick arrivalTime)
             : pcb(id, std::move(name), std::move(priority), arrivalTime)
@@ -70,6 +71,16 @@ namespace contur {
     void ProcessImage::setCode(std::vector<Block> newCode)
     {
         impl_->code = std::move(newCode);
+    }
+
+    std::string_view ProcessImage::nativePath() const noexcept
+    {
+        return impl_->nativePath;
+    }
+
+    void ProcessImage::setNativePath(std::string path)
+    {
+        impl_->nativePath = std::move(path);
     }
 
     ProcessId ProcessImage::id() const noexcept
