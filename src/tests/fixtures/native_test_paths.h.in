@@ -1,0 +1,16 @@
+/// @file native_test_paths.h.in
+/// @brief Generated header — paths to compiled native test fixtures.
+///
+/// Configured by `tests/CMakeLists.txt` via `configure_file()` into the
+/// build tree. Tests include the generated copy and use the constants
+/// to locate fixture binaries that were compiled at configure/build time.
+
+#pragma once
+
+namespace contur::test_fixtures {
+
+    /// @brief Absolute path to the compiled hello-world fixture binary, or
+    ///        empty when the host toolchain could not produce one.
+    inline constexpr const char *kNativeHelloBinary = "@CONTUR2_NATIVE_HELLO_BINARY@";
+
+} // namespace contur::test_fixtures
