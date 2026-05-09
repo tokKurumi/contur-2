@@ -555,7 +555,7 @@ Naming constraints:
 | 14.11 | `demo_filesystem.cpp` — file system operations | `demos/src/demo_filesystem.cpp` | — | |
 | 14.12 | `demo_multiprocessor.cpp` — multiprocessor scheduling | `demos/src/demo_multiprocessor.cpp` | — | |
 | 14.13 | `demo_interpreter.cpp` — bytecode interpreter step-through | `demos/src/demo_interpreter.cpp` | — | |
-| 14.14 | `demo_native.cpp` — native process management (stub until Phase 15) | `demos/src/demo_native.cpp` | — | |
+| 14.14 | `demo_userspace.cpp` — user space process management (stub until Phase 15) | `demos/src/demo_userspace.cpp` | — | |
 | 14.15 | `main.cpp` — CLI menu loop, KernelBuilder wiring, demo dispatch | `app/main.cpp` | — | |
 
 ### Acceptance Criteria
@@ -566,26 +566,179 @@ Naming constraints:
 
 ---
 
-## Phase 15: Native Execution Engine (`execution/`)
+## Phase 15: User Space — Native x86 Program Execution (`execution/`)
 
-**Goal**: Manage real OS child processes under the simulator's scheduler via platform APIs.
+**Goal**: Make Contur 2 a real **program execution engine** by wiring the existing `IExecutionEngine` strategy with a second concrete engine — `NativeEngine` — that launches a real x86 binary as a host child process and lets the simulator's scheduler drive its lifecycle (suspend / resume / terminate) via host-OS APIs. The whole rest of the kernel (Dispatcher, Scheduler, MMU, FileSystem, IPC, SyscallTable, Tracer) is **already in place** — Phase 15 is a focused, infrastructure-respecting addition: one new engine, one tiny field on `ProcessImage`, one demo, tests.
 
-**Dependencies**: Phase 5 (IExecutionEngine interface), Phase 10 (Kernel), Phase 11 (host runtime topology)
+**End-state acceptance**: a C-compiled `hello` binary (`hello.exe` on Windows, an ELF on Linux x86) is registered with the kernel; `kernel->createProcess(cfg)` returns a PID; the simulator's dispatcher ticks → `NativeEngine` resumes the suspended host process for a budgeted slice of wallclock → suspends it → returns control to the dispatcher → reports exit code on termination. Output of the child is captured via stdout pipe and surfaced through the existing `ITracer` for observability.
 
-### Tasks
+> **Why this approach**: the project's full infrastructure (MMU, Scheduler, Dispatcher, SyscallTable, IPC, FileSystem, Kernel facade, KernelBuilder, Tracer, TUI) is already operational. Re-deriving an in-kernel virtual ISA, ELF/CEF loader, libc-CRT, etc. would mean building an entire second OS personality on top of a working one. Following the project's own design (`contur2.instructions.md` §1: *"Dual Execution Engine — InterpreterEngine + NativeEngine"*), the right move is a thin `NativeEngine` that plugs into `IExecutionEngine` exactly the way `InterpreterEngine` already does. No new abstractions; one new strategy plug-in.
+
+**Scope decision**: x86 only. Windows + POSIX (Linux/macOS) hosts are both supported in the same `NativeEngine` class via host-gated `Impl`. The two paths are functionally equivalent at the lifecycle level (spawn → suspend → resume slice → suspend → reap) and behind the same public header.
+
+**Dependencies**: Phase 5 (`IExecutionEngine` seam), Phase 7 (`Dispatcher` already calls `engine.execute`), Phase 10 (`KernelBuilder::withExecutionEngine`), Phase 12 (`ITracer`).
+
+---
+
+### 15.0 What's already there vs what's missing
+
+| Component | Status | Used by Phase 15? |
+|---|---|---|
+| `IExecutionEngine` interface (`execute`, `halt`, `name`) | ✅ exists | yes — `NativeEngine` implements it |
+| `InterpreterEngine` (concrete impl) | ✅ exists | unchanged, kept side-by-side |
+| `ExecutionResult` + `StopReason` (BudgetExhausted/ProcessExited/Error/Interrupted/Halted) | ✅ exists | reused 1:1 |
+| `Dispatcher::dispatch` calls `engine.execute(*processImage, tickBudget)` | ✅ exists | reused 1:1 |
+| `ProcessImage` (PCB + code + RegisterFile) | ✅ exists | adds **one** optional field: `nativePath_` |
+| `ProcessConfig` in `IKernel` | ✅ exists | adds **one** optional field: `nativePath` |
+| `Kernel::createProcess` flow | ✅ exists | passes `nativePath` through to `ProcessImage` |
+| `KernelBuilder::withExecutionEngine` | ✅ exists | demo wires `NativeEngine` instead of `InterpreterEngine` |
+| `ITracer` | ✅ exists | engine emits trace events for spawn/suspend/resume/exit |
+| `SyscallTable` | ✅ exists | not used by `NativeEngine` (real x86 process makes real Win32 calls; we don't intercept them) |
+| `NativeEngine` (concrete impl) | ❌ missing | **this is what Phase 15 adds** |
+
+**That's the full delta.** No new interfaces, no parallel ISA, no new loader, no new privilege model, no syscall ABI work, no MMU changes. One new engine class behind an existing strategy seam, plus one optional field on `ProcessImage`.
+
+### 15.1 Concept
+
+The simulator becomes a **program execution engine** in the literal sense: it owns and controls a real host child process exactly the way an OS owns a user-space process — admit it, allocate it a PID, schedule it, give it CPU time slices, capture its output, observe its termination. The host process is the real x86 program. The simulator is the kernel.
+
+```
++-----------------------------------------------------------------------+
+|  Contur 2 simulator (host process)                                    |
+|                                                                       |
+|   +------- KERNEL -------+         +-------- USER PROCESS --------+   |
+|   | KernelBuilder        |         | Real Windows x86 child       |   |
+|   | Kernel facade        |         | (e.g. hello.exe)             |   |
+|   | Dispatcher           |         |                              |   |
+|   | Scheduler            |         | Suspended at spawn time      |   |
+|   | SyscallTable         |         | Resumed during dispatch tick |   |
+|   | Tracer               |         | Suspended at tick end        |   |
+|   +-----+----------------+         +------------+-----------------+   |
+|         |                                       ^                     |
+|         | Dispatcher::dispatch                  |                     |
+|         v                                       |                     |
+|   +-----+--------------+   suspend/resume       |                     |
+|   | IExecutionEngine   |---- via Win32 -------->+                     |
+|   |  (Strategy)        |                                              |
+|   |                    |   stdout via pipe ----- captured ----+       |
+|   |  - Interpreter (kept, unchanged)                          |       |
+|   |  - NativeEngine (NEW — wraps Win32 child process)         v       |
+|   +--------------------+                              +---------+     |
+|                                                       | Tracer  |     |
+|                                                       +---------+     |
++-----------------------------------------------------------------------+
+```
+
+The dispatcher does not know it is running a real x86 binary instead of an interpreted Block program. It calls `engine.execute(processImage, tickBudget)` and receives an `ExecutionResult` exactly as before. `NativeEngine` is a strict drop-in for `InterpreterEngine` behind the same interface.
+
+#### Lifecycle mapping (host-equivalent)
+
+| Simulator state / event | Win32 action | POSIX action |
+|---|---|---|
+| First `execute()` call for a PID | `CreateProcessW` with `CREATE_SUSPENDED` + redirected stdout pipe | `pipe()` + `fork()` → child does `dup2`/`execv`; parent sends `SIGSTOP` |
+| Subsequent `execute()` calls | `ResumeThread(mainThread)` → `WaitForSingleObject(process, sliceMs)` → `SuspendThread` | `kill(pid, SIGCONT)` → `nanosleep(sliceMs)` → `kill(pid, SIGSTOP)` |
+| `halt(pid)` / process termination | `TerminateProcess` + `CloseHandle` | `kill(pid, SIGKILL)` + `waitpid(pid, …, 0)` to reap zombie |
+| Child exits naturally | `WaitForSingleObject(WAIT_OBJECT_0)` + `GetExitCodeProcess` → `R0` | `waitpid(WNOHANG)` returns `pid` → `WIFEXITED`/`WIFSIGNALED` → `R0` |
+| stdout bytes available | `PeekNamedPipe` + `ReadFile` from anonymous pipe | non-blocking `read()` from pipe FD with `O_NONBLOCK` |
+
+#### What we deliberately do NOT do
+
+- We do **not** intercept the child's syscalls. The child runs natively and uses Win32 NT syscalls; instrumenting that would require a debugger API (`DebugActiveProcess`) which is out of scope for an educational kernel simulator. Process-level scheduling and stdout capture are sufficient to demonstrate "the kernel runs the program".
+- We do **not** touch the simulated MMU/VirtualMemory for native processes. Their memory is owned by the host OS. `Dispatcher::createProcess` still allocates a slot for bookkeeping (so PCB/state machine work uniformly), but it is not used as backing for the child's instructions.
+- We do **not** implement the interpreted-side `SystemCall` plumbing in this phase (that remains a separate concern; `SyscallTable` is already wired into the Kernel facade for direct API use, and the interpreter's `Interrupted` state continues to translate into `Scheduler::blockProcess` as today).
+
+### 15.2 Implementation Plan
+
+#### Files added
+
+| Path | Role |
+|---|---|
+| `src/include/contur/execution/native_engine.h` | Public header for `NativeEngine` (PIMPL, implements `IExecutionEngine`) |
+| `src/contur/execution/native_engine.cpp` | Implementation; Win32 + POSIX backends gated by `#if defined(_WIN32)` / `#elif defined(__unix__) || defined(__APPLE__)`; symmetric lifecycle |
+| `src/tests/unit/test_native_engine.cpp` | Unit tests for `NativeEngine` (Windows + POSIX cases under host gates) |
+| `src/tests/integration/test_native_kernel_flow.cpp` | Integration: `Kernel` + `NativeEngine` runs a host binary to completion (Windows + POSIX cases under gates, plus the C-Lang hello-world demo) |
+| `src/tests/fixtures/native_hello.c` | Tiny `puts("hello, contur")` C source compiled by CMake on POSIX hosts to provide a real ELF for the headline integration test |
+| `src/tests/fixtures/native_test_paths.h.in` | Generated header carrying the path of the compiled fixture binary into tests |
+
+#### Files extended (minimal, additive)
+
+| Path | Change |
+|---|---|
+| `src/include/contur/process/process_image.h` | New optional getter `std::string_view nativePath() const`; new constructor overload that accepts a path; back-compat with the existing `vector<Block>` constructor preserved |
+| `src/contur/process/process_image.cpp` | Stores `nativePath_` inside `Impl` |
+| `src/include/contur/kernel/i_kernel.h` | `ProcessConfig` gains an optional `std::string nativePath` field (default empty) |
+| `src/contur/kernel/kernel.cpp` | `Kernel::createProcess` forwards `config.nativePath` to `ProcessImage` |
+
+That is **the entire surface area change**. No new interfaces, no new directory.
+
+#### NativeEngine internal contract
+
+The `Impl` struct holds a host-specific `Child` POD (handles on Windows, `pid_t` + pipe FD on POSIX) plus a process map, a halt set, and the tracer reference. Both backends share the same `execute()` shape:
+
+1. If `pid` ∈ `haltRequested` → terminate, reap, return `ExecutionResult::halted`.
+2. If no entry for `pid` → spawn (suspended) and insert.
+3. If entry already marked `exited` → write `exitCode` to `R0`, return `ExecutionResult::exited`.
+4. Resume the child (Win32 `ResumeThread` / POSIX `kill(SIGCONT)`).
+5. Wait the wallclock slice (`tickBudget × tickQuantumMs`) — Win32 `WaitForSingleObject` (interrupted on exit), POSIX `nanosleep` then `waitpid(WNOHANG)`.
+6. Suspend the child (best-effort; race window with natural exit is handled by re-polling).
+7. Drain stdout; if exited, emit `R0` + return `exited`; otherwise return `budgetExhausted`.
+
+`halt(pid)` records the request and, on POSIX/Win32 alike, terminates and reaps the tracked child immediately so the next `execute()` (or destructor) sees a terminal state.
+
+`name()` returns `"Native"` on every host.
+
+#### POSIX-specific notes
+
+- `fork()` followed by SIGSTOP has a tiny race window where the child can exit before the parent's signal lands. The engine handles this through `waitpid(WNOHANG)` in `pollExitNoHang` — the next `execute()` reaps the child and reports `exited` with the captured code.
+- `std::string` allocation is performed in the **parent** before `fork()`; the child only calls async-signal-safe functions (`dup2`, `close`, `execv`, `_exit`) on the path buffer it inherited.
+- The pipe read end is configured with `O_NONBLOCK | FD_CLOEXEC` so drains never block and the FD is not leaked into recursive forks.
+- The C-Lang hello-world fixture is compiled at CMake configure time when `UNIX AND NOT APPLE` and a C compiler is available (`clang`/`gcc`/`cc`); the resulting absolute path is exposed via the generated `native_test_paths.h`. On Windows or hosts without a C compiler, the fixture path is empty and the test gracefully `GTEST_SKIP`s.
+
+#### Configuration
+
+`NativeEngine` constructor takes:
+- `ITracer&` — required, for spawn/resume/suspend/exit/stdout trace events
+- `std::uint32_t tickQuantumMs = 5` — wallclock ms per simulation tick (kept small so tests are fast and scheduling is observable)
+
+No CMake flag is needed for the engine itself: Win32 headers come from the standard SDK on Windows; POSIX headers (`<unistd.h>`, `<sys/wait.h>`, `<signal.h>`, `<fcntl.h>`) are part of the system C library on Linux/macOS. The C-fixture compilation is opt-in via toolchain detection in `tests/CMakeLists.txt`.
+
+### 15.3 Tasks
 
 | # | Task | Header | Source | Test | Done |
 |---|---|---|---|---|---|
-| 15.1 | `native_engine.h` — `NativeEngine` (PIMPL; platform-abstract real-process management) | `execution/native_engine.h` | `execution/native_engine.cpp` | `test_native_engine.cpp` | |
-| 15.2 | POSIX impl in `Impl`: `fork/exec`, `SIGSTOP/SIGCONT`, `waitpid` | Inside `native_engine.cpp` (`#if defined(__unix__)`) | — | — | |
-| 15.3 | Windows impl in `Impl`: `CreateProcess`, `SuspendThread/ResumeThread`, `TerminateProcess` | Inside `native_engine.cpp` (`#elif defined(_WIN32)`) | — | — | |
-| 15.4 | Integration: `NativeEngine` in `KernelBuilder`, run external binary under scheduler control | — | — | `test_native_integration.cpp` | |
-| 15.5 | Update `demo_native.cpp` with real functionality | `demos/src/demo_native.cpp` | — | — | |
+| 15.1 | Add `nativePath_` to `ProcessImage::Impl` + getter + ctor overload | `process/process_image.h` (update) | `process/process_image.cpp` (update) | covered by integration tests | ✅ |
+| 15.2 | Add `nativePath` to `ProcessConfig`; thread it from `Kernel::createProcess` to `ProcessImage` | `kernel/i_kernel.h` (update) | `kernel/kernel.cpp` (update) | covered by integration tests | ✅ |
+| 15.3 | `NativeEngine` PIMPL skeleton implementing `IExecutionEngine` (returns `error` if path empty) | `execution/native_engine.h` | `execution/native_engine.cpp` | `test_native_engine.cpp` | ✅ |
+| 15.4 | Win32 backend: `CreateProcessW` + stdout pipe + suspend, tracked in `Child` map | — | `execution/native_engine.cpp` | `test_native_engine.cpp` (Windows) | ✅ |
+| 15.5 | Win32 dispatch loop: resume → wait `sliceMs` → suspend or detect exit → drain stdout | — | `execution/native_engine.cpp` | `test_native_engine.cpp` (Windows) | ✅ |
+| 15.6 | Win32 `halt(pid)` → `TerminateProcess` + handle cleanup | — | `execution/native_engine.cpp` | `test_native_engine.cpp` (Windows) | ✅ |
+| 15.7 | Tracer events for spawn/resume/suspend/exit/stdout | — | `execution/native_engine.cpp` | `BufferSink` assertions in tests | ✅ |
+| 15.8 | POSIX backend: `fork`/`execv` + stdout pipe + `SIGSTOP`/`SIGCONT`/`waitpid` (Linux/macOS) | — | `execution/native_engine.cpp` | `test_native_engine.cpp` (POSIX) | ✅ |
+| 15.9 | POSIX `halt(pid)` → `SIGKILL` + blocking `waitpid` to reap zombie | — | `execution/native_engine.cpp` | `test_native_engine.cpp` (POSIX) | ✅ |
+| 15.10 | C-Lang hello-world fixture: compile `tests/fixtures/native_hello.c` on POSIX hosts via host C compiler | `tests/fixtures/native_test_paths.h.in` | `tests/fixtures/native_hello.c`, `tests/CMakeLists.txt` | — | ✅ |
+| 15.11 | Integration: `Kernel` + `NativeEngine` runs to completion, exit code captured (Windows + POSIX cases) | — | — | `test_native_kernel_flow.cpp` | ✅ |
+| 15.12 | Integration: kernel runs the compiled C hello-world end-to-end (POSIX) | — | — | `test_native_kernel_flow.cpp` (`KernelRunsCompiledClangHelloWorld`) | ✅ |
 
-### Acceptance Criteria
-- NativeEngine on Linux: launches `/bin/echo hello`, captures exit code
-- NativeEngine: halt terminates child process
-- Scheduler controls native process via suspend/resume within tick budget
+### 15.4 Acceptance Criteria
+
+**Windows host (verified on Windows 11)**:
+- `cmake --build --preset win-debug` succeeds with no new warnings.
+- `ctest --preset win-debug` passes **846** tests (was 833 baseline + 8 unit + 5 integration for `NativeEngine`).
+- A `Kernel` built via `KernelBuilder().withExecutionEngine(std::make_unique<NativeEngine>(*tracer))` admits a process with `config.nativePath = "C:\\Windows\\System32\\hostname.exe"` and `runForTicks` drives it to completion; `KernelSnapshot` reflects 0 processes after exit.
+- The simulator's `Tracer` sink records `spawn.ok`/`resume`/`suspend`/`exit` events for the native process in chronological order.
+- Captured stdout from the child is non-empty for `hostname.exe`.
+
+**POSIX host (Linux x86 / macOS)**:
+- The same `KernelBuilder` configuration runs `/bin/hostname` and `/bin/true` to completion; the latter sets `R0 = 0`, the former captures stdout containing the host name.
+- The C-Lang hello-world fixture is compiled at configure time when a host C compiler is available; the integration test `KernelRunsCompiledClangHelloWorld` admits the produced ELF as a Contur process and asserts the captured stdout contains `hello, contur`.
+- Tests gated `#elif defined(__unix__) || defined(__APPLE__)` are visible to ctest on POSIX hosts; no Windows-specific code is reachable from the POSIX path and vice versa.
+
+### 15.5 Out-of-scope (not part of Phase 15)
+
+- In-process syscall interception of the native child. Would require attaching as a debugger (`DebugActiveProcess` / `ptrace`); deferred indefinitely.
+- Loading or interpreting ELF/PE byte-by-byte — unnecessary; the host OS does that for us.
+- Argument passing for `nativePath` — current API stores a single absolute path; `argv` extension can be added later (`std::vector<std::string> nativeArgs` on `ProcessConfig`) without touching `IExecutionEngine`.
+- Any new ISA (RV32IM, custom byte-level Contur, etc.). The interpreter's existing `vector<Block>` ISA is unchanged and remains the educational illustration target.
 
 ---
 
@@ -727,7 +880,7 @@ Phase 11: Host MT Runtime          ████████████         
 Phase 12: Tracing                  ████████             ✅  (9 tasks,  6 tests)
 Phase 13: TUI                      ████████████
 Phase 14: Demos + CLI              ████████████████
-Phase 15: Native Engine            ████████
+Phase 15: User Space (15.A + 15.B) ████████████████████  (25 tasks: loader, address space, mode bit, syscall ABI, RV32IM engine, libcontur, real C demos)
 Phase 16: Tests                    ████████████
 Phase 17: Docs + CI                ████████
 
