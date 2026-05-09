@@ -126,6 +126,9 @@ TEST_F(NativeEngineTest, HaltOnTrackedChildSurfacesTerminalState)
 
 TEST_F(NativeEngineTest, TracerReceivesSpawnAndExitEvents)
 {
+#ifndef CONTUR_TRACE_ENABLED
+    GTEST_SKIP() << "Tracing is disabled in this build.";
+#endif
     SimulationClock clock;
     auto sink = std::make_unique<BufferSink>();
     BufferSink *sinkRaw = sink.get();
@@ -287,6 +290,9 @@ TEST_F(NativeEngineTest, HaltOnTrackedChildSurfacesTerminalState)
 
 TEST_F(NativeEngineTest, TracerReceivesSpawnAndExitEvents)
 {
+#ifndef CONTUR_TRACE_ENABLED
+    GTEST_SKIP() << "Tracing is disabled in this build.";
+#endif
     SimulationClock clock;
     auto sink = std::make_unique<BufferSink>();
     BufferSink *sinkRaw = sink.get();

@@ -181,6 +181,9 @@ TEST(NativeKernelFlowIntegrationTest, MissingNativePathTerminatesQuickly)
 // Tracer integration — verify NativeEngine emits the lifecycle trail
 TEST(NativeKernelFlowIntegrationTest, TraceSinkRecordsNativeLifecycle)
 {
+#ifndef CONTUR_TRACE_ENABLED
+    GTEST_SKIP() << "Tracing is disabled in this build.";
+#endif
     auto sink = std::make_shared<BufferSink>();
     struct ForwardingSink final : public ITraceSink
     {
@@ -384,6 +387,9 @@ TEST(NativeKernelFlowIntegrationTest, MissingNativePathTerminatesQuickly)
 
 TEST(NativeKernelFlowIntegrationTest, TraceSinkRecordsNativeLifecycle)
 {
+#ifndef CONTUR_TRACE_ENABLED
+    GTEST_SKIP() << "Tracing is disabled in this build.";
+#endif
     auto sink = std::make_shared<BufferSink>();
     struct ForwardingSink final : public ITraceSink
     {
