@@ -419,7 +419,7 @@ Follow steps in order; do not skip test gates.
 ## Phase 13: Terminal UI (`tui/`)
 
 **Goal**: Define and implement an **external** UI module (MVC) with contracts-first architecture, controller state
-machine, history navigation, and renderer interfaces. View rendering implementation is intentionally deferred.
+machine, history navigation, renderer interfaces, **and a working FTXUI rendering backend** (`FtxuiRenderer` + `FtxuiApp`).
 
 **Dependencies**: Phase 10 (Kernel API), Phase 11 (scheduler lane snapshots), Phase 12 (optional trace metadata)
 
@@ -436,7 +436,7 @@ machine, history navigation, and renderer interfaces. View rendering implementat
 
 - **Model**: immutable UI snapshot contracts + history records + read-model adapter from kernel state.
 - **Controller**: command-driven state machine (`tick`, autoplay start/stop, pause, seek backward/forward by N).
-- **View**: interfaces only (`IRenderer` + view contracts). No concrete rendering implementation in this phase.
+- **View**: interfaces (`IRenderer` + view contracts) plus the concrete FTXUI rendering backend (`FtxuiRenderer`) and app shell (`FtxuiApp`) that wires keyboard input, autoplay timer, and the live kernel log pane.
 
 ### Tick/Playback Semantics (Contract Level)
 
@@ -507,19 +507,21 @@ Naming constraints:
 
 | # | Task | Header | Source | Test | Done |
 |---|---|---|---|---|---|
-| 13.1 | Define UI model contracts (`TuiProcessSnapshot`, `TuiSchedulerSnapshot`, `TuiMemorySnapshot`, `TuiSnapshot`, `TuiHistoryEntry`) | `tui/tui_models.h` | — | `test_tui_models.cpp` | |
-| 13.2 | Define controller command contracts (`TuiCommandKind`, `TuiCommand`, `TuiPlaybackConfig`) with step size `N` and autoplay interval | `tui/tui_commands.h` | — | `test_tui_commands.cpp` | |
+| 13.1 | Define UI model contracts (`TuiProcessSnapshot`, `TuiSchedulerSnapshot`, `TuiMemorySnapshot`, `TuiSnapshot`, `TuiHistoryEntry`) | `tui/tui_models.h` | — | `test_tui_models.cpp` | ✅ |
+| 13.2 | Define controller command contracts (`TuiCommandKind`, `TuiCommand`, `TuiPlaybackConfig`) with step size `N` and autoplay interval | `tui/tui_commands.h` | — | `test_tui_commands.cpp` | ✅ |
 | 13.3 | Define diagnostics contracts (`KernelDiagnosticsSnapshot`, `IKernelDiagnostics`) | `kernel/i_kernel_diagnostics.h` | — | — | ✅ |
 | 13.4 | Implement diagnostics adapter (`KernelDiagnostics`) over `IKernel::snapshot()` | `kernel/kernel_diagnostics.h` | `kernel/kernel_diagnostics.cpp` | `test_kernel_diagnostics.cpp` | ✅ |
 | 13.5 | Define/implement read-model adapter from diagnostics to TUI snapshots (`IKernelReadModel`, `KernelReadModel`) | `tui/i_kernel_read_model.h` | `tui/kernel_read_model.cpp` | `test_tui_read_model.cpp` | ✅ |
-| 13.5 | Implement bounded UI history buffer with cursor and seek-by-`N` | `tui/history_buffer.h` | `tui/history_buffer.cpp` | `test_tui_history_buffer.cpp` | |
-| 13.6 | Define TUI controller interface (`ITuiController`) | `tui/i_tui_controller.h` | — | — | |
-| 13.7 | Implement controller state machine: `tick(n)`, autoplay, pause, `seekBackward(n)`, `seekForward(n)` | — | `tui/tui_controller.cpp` | `test_tui_controller.cpp` | |
-| 13.8 | Define backend-agnostic renderer interface(s) for MVC view boundary | `tui/i_renderer.h` | — | `test_tui_renderer_contracts.cpp` | |
-| 13.9 | Define view contracts for process/scheduler/memory panels (interfaces only) | `tui/process_view.h`, `tui/scheduler_view.h`, `tui/memory_map_view.h`, `tui/dashboard.h` | — | compile-only contract checks | |
-| 13.10 | Add integration tests for tick playback and history navigation semantics | — | — | `test_tui_tick_navigation.cpp` | |
-| 13.11 | Document library strategy (defer backend choice, keep adapter seam) | `.github/IMPLEMENTATION_PLAN.md` | — | review | ✅ |
-| 13.12 | Document strict boundary: UI external module, no kernel rollback from snapshot | `.github/IMPLEMENTATION_PLAN.md`, `.github/instructions/contur2.instructions.md` | — | review | ✅ |
+| 13.6 | Implement bounded UI history buffer with cursor and seek-by-`N` | `tui/history_buffer.h` | `tui/history_buffer.cpp` | `test_tui_history_buffer.cpp` | ✅ |
+| 13.7 | Define TUI controller interface (`ITuiController`) | `tui/i_tui_controller.h` | — | — | ✅ |
+| 13.8 | Implement controller state machine: `tick(n)`, autoplay, pause, `seekBackward(n)`, `seekForward(n)` | — | `tui/tui_controller.cpp` | `test_tui_controller.cpp` | ✅ |
+| 13.9 | Define backend-agnostic renderer interface(s) for MVC view boundary | `tui/i_renderer.h` | — | `test_tui_renderer_contracts.cpp` | ✅ |
+| 13.10 | Define view contracts for process/scheduler/memory panels (interfaces only) | `tui/process_view.h`, `tui/scheduler_view.h`, `tui/memory_map_view.h`, `tui/dashboard.h` | — | compile-only contract checks | ✅ |
+| 13.11 | Implement FTXUI renderer backend (`FtxuiRenderer` implementing `IRenderer`) | `tui/ftxui_renderer.h` | `tui/ftxui_renderer.cpp` | `test_tui_ftxui_renderer.cpp` | ✅ |
+| 13.12 | Implement FTXUI app shell (`FtxuiApp` — keyboard input loop, autoplay timer, log pane integration) | `tui/ftxui_app.h` | `tui/ftxui_app.cpp` | `test_tui_ftxui_integration.cpp` | ✅ |
+| 13.13 | Add integration tests for tick playback and history navigation semantics | — | — | `test_tui_tick_navigation.cpp` | ✅ |
+| 13.14 | Document library strategy (defer backend choice, keep adapter seam) | `.github/IMPLEMENTATION_PLAN.md` | — | review | ✅ |
+| 13.15 | Document strict boundary: UI external module, no kernel rollback from snapshot | `.github/IMPLEMENTATION_PLAN.md`, `.github/instructions/contur2.instructions.md` | — | review | ✅ |
 
 ### Acceptance Criteria
 
@@ -528,41 +530,41 @@ Naming constraints:
 - History navigation is explicit UI-only playback; kernel rollback is not implemented and not implied by API.
 - Extended UI snapshot contracts exist for processes, queues, and memory-level data.
 - Renderer/view interfaces compile independently from any concrete backend implementation.
-- Unit + integration tests validate controller transitions, playback loop behavior, and history cursor semantics.
+- FTXUI backend (`FtxuiRenderer` + `FtxuiApp`) renders the live kernel state and is the entry point launched from `src/app/main.cpp`.
+- Unit + integration tests validate controller transitions, playback loop behavior, history cursor semantics, and FTXUI renderer/integration behavior.
 
 ---
 
-## Phase 14: Demos + CLI (`demos/` + `app/`)
+## Phase 14: App Shell (`app/`) — *FTXUI-based, replaces CLI-menu demos*
 
-**Goal**: Interactive console menu with demo programs for each subsystem. Step-by-step in Debug, continuous in Release.
+**Goal**: Provide a runnable end-user entry point. The original plan for a Debug/Release CLI menu plus a separate
+`demos/*.cpp` library was **superseded** during Phase 13 by the FTXUI TUI (see [13.11]–[13.12]): all subsystem demos
+are exercised live inside the TUI from sample processes spawned by `src/app/main.cpp`.
 
 **Dependencies**: Phases 10, 11, 12, 13
+
+### Status
+
+- `src/demos/CMakeLists.txt` is retained as an `INTERFACE` library placeholder (no sources). It is kept so that
+    targeted standalone demo programs can be added later without restructuring the build, but it is not used today.
+- The previously planned `Stepper` / `CONTUR_STEP_MODE` step-mode mechanism is **not implemented**; the FTXUI app
+    provides interactive pause/seek/autoplay instead.
 
 ### Tasks
 
 | # | Task | Files | Test | Done |
 |---|---|---|---|---|
-| 14.1 | `stepper.h` / `stepper.cpp` — `Stepper` utility (CONTUR_STEP_MODE toggle) | `demos/include/demos/stepper.h`, `demos/src/stepper.cpp` | — | |
-| 14.2 | `demos.h` — all demo function declarations | `demos/include/demos/demos.h` | — | |
-| 14.3 | `demo_context.cpp` — `DemoContext` (PIMPL, bundles Kernel + subsystem references) | `demos/src/demo_context.cpp` | — | |
-| 14.4 | `demo_architecture.cpp` — registers, instruction set, fetch-decode-execute | `demos/src/demo_architecture.cpp` | — | |
-| 14.5 | `demo_process.cpp` — process creation, priority, state transitions | `demos/src/demo_process.cpp` | — | |
-| 14.6 | `demo_memory.cpp` — MMU, virtual memory, page replacement | `demos/src/demo_memory.cpp` | — | |
-| 14.7 | `demo_scheduling.cpp` — all 7 scheduling algorithms comparison | `demos/src/demo_scheduling.cpp` | — | |
-| 14.8 | `demo_synchronization.cpp` — mutex, semaphore, critical section | `demos/src/demo_synchronization.cpp` | — | |
-| 14.9 | `demo_deadlock.cpp` — deadlock detection and prevention | `demos/src/demo_deadlock.cpp` | — | |
-| 14.10 | `demo_ipc.cpp` — pipes, shared memory, message queues | `demos/src/demo_ipc.cpp` | — | |
-| 14.11 | `demo_filesystem.cpp` — file system operations | `demos/src/demo_filesystem.cpp` | — | |
-| 14.12 | `demo_multiprocessor.cpp` — multiprocessor scheduling | `demos/src/demo_multiprocessor.cpp` | — | |
-| 14.13 | `demo_interpreter.cpp` — bytecode interpreter step-through | `demos/src/demo_interpreter.cpp` | — | |
-| 14.14 | `demo_userspace.cpp` — user space process management (stub until Phase 15) | `demos/src/demo_userspace.cpp` | — | |
-| 14.15 | `main.cpp` — CLI menu loop, KernelBuilder wiring, demo dispatch | `app/main.cpp` | — | |
+| 14.1 | FTXUI-based app shell launching the simulator with sample processes (replaces planned CLI menu) | `src/app/main.cpp`, `src/app/CMakeLists.txt` | covered by `test_tui_ftxui_integration.cpp` | ✅ |
+| 14.2 | Demo kernel builder + sample programs (`makeProgramAddOnePlusOne`, counter loop, CPU-heavy, idle/background NOP loops) inside the app shell | `src/app/main.cpp` | exercised end-to-end at runtime | ✅ |
+| 14.3 | Trace dump on shutdown (kernel `BufferSink` flushed to stdout after the TUI exits) | `src/app/main.cpp` | exercised end-to-end at runtime | ✅ |
+| 14.4 | `contur2_demos` placeholder CMake target retained for future standalone demos | `src/demos/CMakeLists.txt` | — | ✅ |
+| 14.5 | (Optional, future) Re-introduce per-subsystem standalone demo programs (architecture, scheduling, sync, deadlock, IPC, filesystem, multiprocessor, interpreter, userspace) under `src/demos/src/` | `demos/src/*.cpp` | — | |
+| 14.6 | (Optional, future) `Stepper` utility + `CONTUR_STEP_MODE` for step-by-step CLI walkthroughs | `demos/include/demos/stepper.h` + `.cpp` | — | |
 
 ### Acceptance Criteria
-- All demos run in Release mode without pausing
-- All demos pause at each step in Debug mode (`CONTUR_STEP_MODE`)
-- User can navigate menu, run any demo, return to menu
-- `q` during step-by-step skips remaining steps in current demo
+- `contur2` app launches the FTXUI TUI, drives sample processes through the scheduler, and exits cleanly on user quit.
+- Kernel trace events are surfaced live in the TUI log pane and dumped to stdout on shutdown.
+- The `contur2_demos` target builds (currently as `INTERFACE`) and remains a valid extension point for future demos.
 
 ---
 
@@ -723,7 +725,7 @@ No CMake flag is needed for the engine itself: Win32 headers come from the stand
 
 **Windows host (verified on Windows 11)**:
 - `cmake --build --preset win-debug` succeeds with no new warnings.
-- `ctest --preset win-debug` passes **846** tests (was 833 baseline + 8 unit + 5 integration for `NativeEngine`).
+- `ctest --preset win-debug` passes the full Windows suite (the `NativeEngine` adds 18 unit + 11 integration tests on top of the cross-platform baseline).
 - A `Kernel` built via `KernelBuilder().withExecutionEngine(std::make_unique<NativeEngine>(*tracer))` admits a process with `config.nativePath = "C:\\Windows\\System32\\hostname.exe"` and `runForTicks` drives it to completion; `KernelSnapshot` reflects 0 processes after exit.
 - The simulator's `Tracer` sink records `spawn.ok`/`resume`/`suspend`/`exit` events for the native process in chronological order.
 - Captured stdout from the child is non-empty for `hostname.exe`.
@@ -752,18 +754,19 @@ No CMake flag is needed for the engine itself: Win32 headers come from the stand
 
 | # | Task | Files | Done |
 |---|---|---|---|
-| 16.1 | Audit all existing unit tests, fill coverage gaps | `tests/unit/test_*.cpp` | |
-| 16.2 | `test_dispatcher_flow.cpp` — full lifecycle integration test | `tests/integration/test_dispatcher_flow.cpp` | |
-| 16.3 | `test_interpreter_execution.cpp` — program load → execute → verify output | `tests/integration/test_interpreter_execution.cpp` | |
-| 16.4 | `test_kernel_api.cpp` — end-to-end through IKernel | `tests/integration/test_kernel_api.cpp` | |
-| 16.5 | `test_ipc_flow.cpp` — producer/consumer through pipes + message queues | `tests/integration/test_ipc_flow.cpp` | |
-| 16.6 | `test_filesystem_io.cpp` — file create/read/write/delete through syscalls | `tests/integration/test_filesystem_io.cpp` | |
+| 16.1 | Audit all existing unit tests, fill coverage gaps via `_extended` suites (buffer_sink, ipc_manager, kernel_diagnostics, message_queue, pipe, scheduler, scheduling_policies, simple_fs, statistics, syscall, tracer, tui_history_buffer, tui_read_model, virtual_memory) | `tests/unit/test_*_extended.cpp` | ✅ |
+| 16.2 | Full lifecycle integration test (replaces planned `test_dispatcher_flow.cpp`) | `tests/integration/test_kernel_end_to_end.cpp` | ✅ |
+| 16.3 | Program load → execute → verify output (covered by `test_interpreter_engine.cpp` + `test_kernel_end_to_end.cpp`; standalone `test_interpreter_execution.cpp` not added) | covered indirectly | 🔄 |
+| 16.4 | `test_kernel_api.cpp` — end-to-end through IKernel | `tests/integration/test_kernel_api.cpp` | ✅ |
+| 16.5 | Producer/consumer through pipes + message queues (covered by `test_pipe_extended.cpp` and `test_message_queue_extended.cpp`; dedicated `test_ipc_flow.cpp` not added) | covered indirectly | 🔄 |
+| 16.6 | File create/read/write/delete (covered by `test_simple_fs_extended.cpp` + `test_syscall_extended.cpp`; dedicated `test_filesystem_io.cpp` not added) | covered indirectly | 🔄 |
 | 16.7 | Coverage report: target 80%+ line coverage | — | |
-| 16.8 | `test_scheduler_concurrent.cpp` — per-core queue correctness + work stealing behavior under load | `tests/unit/test_scheduler_concurrent.cpp` | |
-| 16.9 | `test_deadlock_detector_concurrent.cpp` — thread-aware wait-for cycles + internal lock-order cycle detection | `tests/unit/test_deadlock_detector_concurrent.cpp` | |
-| 16.10 | `test_deterministic_multithread.cpp` — identical seed/config produces identical scheduling/trace order in N>1 mode | `tests/integration/test_deterministic_multithread.cpp` | |
-| 16.11 | Stress suite: high-contention memory/device/IPC scenarios with bounded-time liveness checks | `tests/integration/test_contention_stress.cpp` | |
-| 16.12 | ThreadSanitizer lane (`debug-tsan`) for race detection on multithreaded paths | build/test preset update | |
+| 16.8 | `test_scheduler_concurrent.cpp` — per-core queue correctness + work stealing behavior under load | `tests/unit/test_scheduler_concurrent.cpp` | ✅ |
+| 16.9 | `test_deadlock_detector_concurrent.cpp` — thread-aware wait-for cycles + internal lock-order cycle detection | `tests/unit/test_deadlock_detector_concurrent.cpp` | ✅ |
+| 16.10 | `test_deterministic_multithread.cpp` — identical seed/config produces identical scheduling/trace order in N>1 mode | `tests/integration/test_deterministic_multithread.cpp` | ✅ |
+| 16.11 | Stress suite: high-contention memory/device/IPC scenarios with bounded-time liveness checks (partially covered by `test_resource_contention.cpp`; dedicated `test_contention_stress.cpp` not added) | `tests/unit/test_resource_contention.cpp` | 🔄 |
+| 16.12 | ThreadSanitizer lane (`tsan-debug`, `tsan-release`, `tsan-gcc-debug`, `tsan-gcc-release`, `tsan-win-*`) for race detection on multithreaded paths | `src/CMakePresets.json` | ✅ |
+| 16.13 | Process/scheduling integration suite (added on top of original plan) | `tests/integration/test_process_scheduling_integration.cpp` | ✅ |
 
 ### Acceptance Criteria
 - `ctest --preset debug` passes all tests with zero failures
@@ -784,14 +787,15 @@ No CMake flag is needed for the engine itself: Win32 headers come from the stand
 
 | # | Task | Done |
 |---|---|---|
-| 17.1 | Add `///` Doxygen comments to all public interfaces | [ ] |
-| 17.2 | CMake `doxygen_add_docs` target | [ ] |
-| 17.3 | GitHub Actions workflow: matrix (Clang + GCC) × (Debug + Release), test, sanitizers | [ ] |
+| 17.1 | Add `///` Doxygen comments to all public interfaces | 🔄 (most headers documented; full audit pending) |
+| 17.2 | CMake `docs` target (uses `add_custom_target` + Doxygen + `doxygen-awesome-css`, theme overrides via `Doxyfile.in` / `Doxyfile.override.in`) | ✅ |
+| 17.3 | GitHub Actions workflow: matrix Clang + GCC, Release + TSAN-Release (see `.github/workflows/ci.yml`) | 🔄 (Release/TSAN-Release axes shipped; Debug axis + ASAN/UBSAN not yet in CI) |
 | 17.4 | Coverage step in CI (lcov/gcov or llvm-cov) | [ ] |
-| 17.5 | README.md for src/ with build instructions and demo screenshots | [ ] |
-| 17.6 | Document multithreading runtime architecture (N>=1, per-core queues, work stealing, deterministic mode) | [ ] |
-| 17.7 | Add CI matrix axis for host-thread counts (at least N=1 and N=4) + TSAN job | [ ] |
-| 17.8 | Document lock hierarchy, shared-resource arbitration rules, and deadlock analysis model (simulated + internal) | [ ] |
+| 17.5 | Top-level `README.md` with build instructions and demo screenshots | ✅ |
+| 17.6 | Document multithreading runtime architecture (N>=1, per-core queues, work stealing, deterministic mode) in `.github/instructions/contur2.instructions.md` | 🔄 |
+| 17.7 | Add CI matrix axis for host-thread counts (at least N=1 and N=4) + TSAN job | 🔄 (TSAN job ✅; explicit N-axis pending) |
+| 17.8 | Document lock hierarchy, shared-resource arbitration rules, and deadlock analysis model (simulated + internal) | 🔄 |
+| 17.9 | Standalone Doxygen publish workflow (`.github/workflows/docs.yml`) deploying to GitHub Pages | ✅ |
 
 ### Acceptance Criteria
 - `cmake --build --preset debug --target docs` generates HTML API docs
@@ -813,7 +817,7 @@ No CMake flag is needed for the engine itself: Win32 headers come from the stand
 | 2 | `test_physical_memory.cpp` | PhysicalMemoryTest | 12 |
 | 2 | `test_page_table.cpp` | PageTableTest | 14 |
 | 2 | `test_page_replacement.cpp` | FifoReplacementTest, LruReplacementTest, ClockReplacementTest, OptimalReplacementTest | 20 |
-| 2 | `test_mmu.cpp` | MmuTest | 14 |
+| 2 | `test_mmu.cpp` | MmuTest | 17 |
 | 2 | `test_virtual_memory.cpp` | VirtualMemoryTest | 15 |
 | 3 | `test_process_state.cpp` | ProcessStateTest | 30 |
 | 3 | `test_priority.cpp` | PriorityLevelTest, PriorityTest | 22 |
@@ -844,7 +848,7 @@ No CMake flag is needed for the engine itself: Win32 headers come from the stand
 | 8 | `test_syscall_table.cpp` | SyscallTableTest | 6 |
 | 9 | `test_block_allocator.cpp` | BlockAllocatorTest | 6 |
 | 9 | `test_simple_fs.cpp` | SimpleFSTest | 8 |
-| 10 | `test_kernel_builder.cpp` | KernelBuilderTest | 14 |
+| 10 | `test_kernel_builder.cpp` | KernelBuilderTest | 16 |
 | 10 | `test_kernel_api.cpp` | KernelApiIntegrationTest | 4 |
 | 11 | `test_threading_config.cpp` | ThreadingConfigTest | 5 |
 | 11 | `test_dispatcher_pool.cpp` | DispatcherPoolTest | 7 |
@@ -857,8 +861,42 @@ No CMake flag is needed for the engine itself: Win32 headers come from the stand
 | 11 | `test_deterministic_multithread.cpp` | DeterministicMultithreadIntegrationTest | 1 |
 | 11 | `test_tracer_concurrent.cpp` | TracerConcurrentTest | 2 |
 | 12 | `test_buffer_sink.cpp` | BufferSinkTest | 2 |
-| 12 | `test_tracer.cpp` | TracerTest | 3 |
-| | | **62 suites** | **533** |
+| 12 | `test_tracer.cpp` | TracerTest | 4 |
+| | | **62 suites** | **539** |
+
+### Test Statistics (Phases 13–16, post-baseline additions)
+
+| Phase | Test File | Test Suites | Tests |
+|---|---|---|---|
+| 13 | `test_kernel_diagnostics.cpp` | KernelDiagnosticsTest | 1 |
+| 13 | `test_tui_models.cpp` | TuiModelsTest | 2 |
+| 13 | `test_tui_commands.cpp` | TuiCommandsTest | 6 |
+| 13 | `test_tui_read_model.cpp` | TuiReadModelTest | 4 |
+| 13 | `test_tui_history_buffer.cpp` | TuiHistoryBufferTest | 5 |
+| 13 | `test_tui_controller.cpp` | TuiControllerTest | 13 |
+| 13 | `test_tui_renderer_contracts.cpp` | TuiRendererContractsTest | 3 |
+| 13 | `test_tui_ftxui_renderer.cpp` | TuiFtxuiRendererTest | 16 |
+| 13 | `test_tui_tick_navigation.cpp` (integration) | TuiTickNavigationIntegrationTest | 2 |
+| 13 | `test_tui_ftxui_integration.cpp` (integration) | TuiFtxuiIntegrationTest | 17 |
+| 15 | `test_native_engine.cpp` | NativeEngineTest | 18 |
+| 15 | `test_native_kernel_flow.cpp` (integration) | NativeKernelFlowTest | 11 |
+| 16 | `test_kernel_end_to_end.cpp` (integration) | KernelEndToEndTest | 18 |
+| 16 | `test_process_scheduling_integration.cpp` (integration) | ProcessSchedulingIntegrationTest | 10 |
+| 16 | `test_buffer_sink_extended.cpp` | BufferSinkExtendedTest | 10 |
+| 16 | `test_ipc_manager_extended.cpp` | IpcManagerExtendedTest | 11 |
+| 16 | `test_kernel_diagnostics_extended.cpp` | KernelDiagnosticsExtendedTest | 7 |
+| 16 | `test_message_queue_extended.cpp` | MessageQueueExtendedTest | 9 |
+| 16 | `test_pipe_extended.cpp` | PipeExtendedTest | 9 |
+| 16 | `test_scheduler_extended.cpp` | SchedulerExtendedTest | 19 |
+| 16 | `test_scheduling_policies_extended.cpp` | SchedulingPoliciesExtendedTest | 47 |
+| 16 | `test_simple_fs_extended.cpp` | SimpleFsExtendedTest | 21 |
+| 16 | `test_statistics_extended.cpp` | StatisticsExtendedTest | 11 |
+| 16 | `test_syscall_extended.cpp` | SyscallExtendedTest | 9 |
+| 16 | `test_tracer_extended.cpp` | TracerExtendedTest | 12 |
+| 16 | `test_tui_history_buffer_extended.cpp` | TuiHistoryBufferExtendedTest | 14 |
+| 16 | `test_tui_read_model_extended.cpp` | TuiReadModelExtendedTest | 9 |
+| 16 | `test_virtual_memory_extended.cpp` | VirtualMemoryExtendedTest | 9 |
+| | | **Phase 13:** 69 · **Phase 15:** 29 · **Phase 16:** 225 | **Grand total: 862** |
 
 ---
 
@@ -867,7 +905,7 @@ No CMake flag is needed for the engine itself: Win32 headers come from the stand
 ```
 Phase 0:  Scaffolding              ████                 ✅  (12 tasks)
 Phase 1:  Foundation (core+arch)   ████████             ✅  (9 tasks,  43 tests)
-Phase 2:  Memory                   ████████████         ✅  (8 tasks,  75 tests)
+Phase 2:  Memory                   ████████████         ✅  (8 tasks,  78 tests)
 Phase 3:  Process                  ████████             ✅  (5 tasks,  99 tests)
 Phase 4:  CPU + I/O                ████████████         ✅  (7 tasks,  94 tests)
 Phase 5:  Interpreter              ████████             ✅  (3 tasks,  26 tests)
@@ -875,14 +913,14 @@ Phase 6:  Scheduling               ███████████████
 Phase 7:  Dispatch + Sync          ████████████████     ✅  (8 tasks,  64 tests)
 Phase 8:  IPC + Syscalls           ████████████         ✅  (8 tasks,  33 tests)
 Phase 9:  File System              ████████████         ✅  (6 tasks,  14 tests)
-Phase 10: Kernel                   ████████             ✅  (4 tasks,  18 tests)
+Phase 10: Kernel                   ████████             ✅  (4 tasks,  20 tests)
 Phase 11: Host MT Runtime          ████████████         ✅  (13 tasks, 39 tests)
 Phase 12: Tracing                  ████████             ✅  (9 tasks,  6 tests)
-Phase 13: TUI                      ████████████
-Phase 14: Demos + CLI              ████████████████
-Phase 15: User Space (15.A + 15.B) ████████████████████  (25 tasks: loader, address space, mode bit, syscall ABI, RV32IM engine, libcontur, real C demos)
-Phase 16: Tests                    ████████████
-Phase 17: Docs + CI                ████████
+Phase 13: TUI (incl. FTXUI)        ████████████████     ✅  (15 tasks, 69 tests)
+Phase 14: TUI app shell            ████████             🔄  (replaced original CLI-menu demos; FTXUI app in `src/app/main.cpp`)
+Phase 15: User Space (native)      ████████████         ✅  (12 tasks, 29 tests)
+Phase 16: Tests                    ████████████████     🔄  (extended/integration suites in place; coverage report + dedicated flow tests pending)
+Phase 17: Docs + CI                ████████             🔄  (Doxygen target + docs.yml ✅ · README ✅ · GCC×Clang Release CI ✅ · Debug-axis + coverage + N-axis pending)
 
-Total: 533 tests passing (Phases 0–12)
+Total: 862 tests passing across Phases 0–16
 ```
