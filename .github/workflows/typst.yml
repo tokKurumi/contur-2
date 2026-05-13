@@ -64,11 +64,17 @@ jobs:
       - name: Install smk-sto template package from source
         env:
           SMK_STO_REPO: https://github.com/tokKurumi/smk-sto.git
-          SMK_STO_REF: main
+          # Pin to a tag, branch, or SHA for reproducibility. Empty = default branch.
+          SMK_STO_REF: ""
         run: |
           set -euo pipefail
           src=$(mktemp -d)
-          git clone --depth 1 --branch "$SMK_STO_REF" "$SMK_STO_REPO" "$src"
+          ref="${SMK_STO_REF:-}"
+          if [[ -n "$ref" ]]; then
+            git clone --depth 1 --branch "$ref" "$SMK_STO_REPO" "$src"
+          else
+            git clone --depth 1 "$SMK_STO_REPO" "$src"
+          fi
 
           if [[ ! -f "$src/typst.toml" ]]; then
             echo "typst.toml not found at the root of $SMK_STO_REPO@$SMK_STO_REF" >&2
