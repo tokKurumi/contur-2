@@ -7,23 +7,27 @@
 
 ## Контекст и цель
 
-Contur 2 строится как учебный симулятор операционной системы с фокусом на архитектурной прозрачности: каждый слой должен быть понятен, воспроизводим и проверяем тестами. На первых двух этапах формируется технический каркас, на который затем опираются память, CPU, планировщик и ядро.
+Contur 2 — учебный симулятор операционной системы с фокусом на архитектурной прозрачности:
+каждый слой должен быть понятен, воспроизводим и проверяем тестами. Технический каркас и
+фундаментальные типы образуют основу, на которую опираются память, CPU, планировщик и ядро.
 
-В рамках этого отчета фиксируются:
+В этом отчёте описываются:
 
-- архитектурные принципы, принятые в основании проекта;
+- архитектурные принципы, лежащие в основе проекта;
 - сборочная схема и стандартизированный запуск;
-- фундаментальные типы/контракты (`core`, `arch`);
-- проверка того, что база действительно воспроизводима.
+- фундаментальные типы и контракты (`core`, `arch`);
+- порядок проверки воспроизводимости базы.
 
 Иллюстрация для вставки в Word (сразу после этого абзаца):
 
 - Рисунок: дерево репозитория с выделением `src/include/contur`, `src/contur`, `src/app`, `src/tests`.
 - Что добавить: скрин структуры директорий из IDE или терминала.
 
-## Этап scaffold: как собран технический каркас
+## Сборочный каркас
 
-На стадии scaffold проект получил единый вход в сборку через CMake presets и стандартизированный shell-скрипт. Это критично для команды и CI: все разработчики запускают одинаковую цепочку действий.
+Сборка проекта собрана вокруг единого входа: CMake presets и стандартизированный
+shell-скрипт. Это даёт команде и CI единую цепочку действий и одинаковое окружение у всех
+разработчиков.
 
 Фрагмент из `src/CMakeLists.txt`:
 
@@ -48,30 +52,47 @@ option(CONTUR2_BUILD_APP "Build application executable" ON)
 
 ### Схема: контейнерная карта компонентов (C4)
 
+> Карта отражает реальные CMake-таргеты проекта. Важная архитектурная инварианта: `contur2_lib`
+> никогда не зависит от `contur2_tui` (ядро остаётся без UI), а исполняемый `contur2` (app)
+> линкуется не напрямую к ядру, а через слой `contur2_tui`, который транзитивно подтягивает
+> `contur2_lib`. FTXUI как сторонняя зависимость подключается только к `contur2_tui`.
+
 ```xml
 <mxGraphModel dx="1773" dy="644" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
   <root>
     <mxCell id="0" />
     <mxCell id="1" parent="0" />
     <mxCell id="10" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="contur2 (app)" vertex="1">
-      <mxGeometry x="40" y="70" width="150" height="60" as="geometry" />
+      <mxGeometry x="40" y="40" width="150" height="60" as="geometry" />
     </mxCell>
     <mxCell id="11" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="contur2_demos" vertex="1">
-      <mxGeometry x="240" y="70" width="150" height="60" as="geometry" />
+      <mxGeometry x="240" y="40" width="200" height="60" as="geometry" />
     </mxCell>
-    <mxCell id="12" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="contur2_lib" vertex="1">
-      <mxGeometry x="140" y="180" width="150" height="60" as="geometry" />
+    <mxCell id="14" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="contur2_tui" vertex="1">
+      <mxGeometry x="40" y="150" width="150" height="60" as="geometry" />
     </mxCell>
-    <mxCell id="13" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="tests (GTest)" vertex="1">
-      <mxGeometry x="430" y="180" width="150" height="60" as="geometry" />
+    <mxCell id="15" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="ftxui::ftxui (Conan)" vertex="1">
+      <mxGeometry x="240" y="150" width="200" height="60" as="geometry" />
     </mxCell>
-    <mxCell id="20" edge="1" parent="1" source="10" target="12" style="endArrow=classic;html=1;" value="link" >
+    <mxCell id="12" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="contur2_lib (kernel)" vertex="1">
+      <mxGeometry x="40" y="260" width="150" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="13" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="tests (GTest, unit + integration)" vertex="1">
+      <mxGeometry x="240" y="260" width="240" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="20" edge="1" parent="1" source="10" target="14" style="endArrow=classic;html=1;" value="link PRIVATE">
       <mxGeometry relative="1" as="geometry" />
     </mxCell>
-    <mxCell id="21" edge="1" parent="1" source="11" target="12" style="endArrow=classic;html=1;" value="link" >
+    <mxCell id="21" edge="1" parent="1" source="10" target="11" style="endArrow=classic;html=1;" value="link PRIVATE">
       <mxGeometry relative="1" as="geometry" />
     </mxCell>
-    <mxCell id="22" edge="1" parent="1" source="13" target="12" style="endArrow=classic;html=1;" value="test" >
+    <mxCell id="23" edge="1" parent="1" source="14" target="12" style="endArrow=classic;html=1;" value="link PUBLIC">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="24" edge="1" parent="1" source="14" target="15" style="endArrow=classic;html=1;" value="link PUBLIC">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="22" edge="1" parent="1" source="13" target="12" style="endArrow=classic;html=1;" value="test target">
       <mxGeometry relative="1" as="geometry" />
     </mxCell>
   </root>
@@ -85,7 +106,7 @@ option(CONTUR2_BUILD_APP "Build application executable" ON)
 
 ## Принципы архитектуры, заложенные на фундаменте
 
-В ранней фазе зафиксированы четыре ключевых решения: DIP, PIMPL, `Result<T>`, smart pointers.
+В основу архитектуры заложены четыре ключевых решения: DIP, PIMPL, `Result<T>`, smart pointers.
 
 ### DIP и интерфейсные контракты
 
@@ -288,9 +309,9 @@ enum class Register : std::uint8_t
 
 Перечисление `Instruction` фиксирует базовый набор команд симулируемой архитектуры. В нем уже есть арифметические операции (`Mov`, `Add`, `Sub`, `Mul`, `Div`), логические операции, переходы, работа со стеком, обращения к памяти, программные прерывания и завершение выполнения. Такой набор показывает, что интерпретатор на этом этапе проектируется не как абстрактный «исполнитель команд», а как конкретная модель процессорного контура с понятной семантикой каждой инструкции.
 
-Перечисление `Register` задает регистровый файл из 16 позиций и разделяет общие регистры и специальные системные регистры. Регистры `R0`–`R13` используются как универсальные рабочие ячейки, `ProgramCounter` хранит адрес следующей инструкции, а `StackPointer` указывает вершину стека. Такое деление важно для последующих стадий, потому что сразу формирует основу для исполнения подпрограмм, ветвлений, сохранения контекста и переключения процессов.
+Перечисление `Register` задаёт регистровый файл из 16 позиций и разделяет общие регистры и специальные системные регистры. Регистры `R0`–`R13` используются как универсальные рабочие ячейки, `ProgramCounter` хранит адрес следующей инструкции, а `StackPointer` указывает вершину стека. Такое деление формирует основу для исполнения подпрограмм, ветвлений, сохранения контекста и переключения процессов.
 
-Вместе эти два перечисления образуют минимальный архитектурный контракт уровня ISA: набор допустимых команд и пространство, в котором эти команды работают. Именно на этой базе затем строятся CPU, интерпретатор, диспетчер процессов и механизмы сохранения состояния.
+Вместе эти два перечисления образуют минимальный архитектурный контракт уровня ISA: набор допустимых команд и пространство, в котором эти команды работают. На этой базе строятся CPU, интерпретатор, диспетчер процессов и механизмы сохранения состояния.
 
 ### Схема: мини-поток fetch-decode-execute на foundation-уровне
 
@@ -326,14 +347,14 @@ enum class Register : std::uint8_t
 
 ## Сборочный поток и воспроизводимость
 
-Для воспроизведения состояния после первых этапов используется единый скрипт:
+Полный цикл сборки и прогона тестов запускается одним скриптом:
 
 ```bash
 bash src/build.sh debug src
 ctest --preset debug --output-on-failure
 ```
 
-Актуальный фрагмент `build.sh`, отвечающий за непротиворечивую конфигурацию Conan + CMake:
+Фрагмент `build.sh`, отвечающий за непротиворечивую конфигурацию Conan + CMake:
 
 ```bash
 conan install "${SOURCE_DIR}/tests" \
@@ -399,11 +420,14 @@ cmake --preset "${PRESET}" \
 
 ## Критерии готовности
 
-- В тексте есть связка «архитектурное решение -> фрагмент кода -> практический эффект».
+- В тексте есть связка «архитектурное решение → фрагмент кода → практический эффект».
 - Схемы распределены по контексту, а не вынесены отдельным блоком в конец.
 - В документ встроены места под иллюстрации в тех разделах, где они логически объясняют материал.
-- Отражены выводы по двум базовым этапам, на которых строятся следующие стадии проекта.
+- Описаны базовые архитектурные решения, на которых стоят остальные подсистемы.
 
 ## Краткие выводы
 
-На начальном цикле разработки удалось сформировать устойчивый каркас проекта: воспроизводимую сборку, единые доменные типы, предсказуемую модель ошибок, интерфейсные контракты и базовую архитектурную модель CPU/ISA. Это делает последующие этапы (память, процессы, планирование, ядро) расширением уже согласованной базы, а не набором несвязанных изменений.
+Архитектурный фундамент Contur 2 — это воспроизводимая сборка, единые доменные типы,
+предсказуемая модель ошибок, интерфейсные контракты и базовая архитектурная модель CPU/ISA.
+Память, процессы, планирование и ядро строятся на этой базе как согласованное расширение,
+а не как набор несвязанных модулей.
