@@ -59,7 +59,7 @@ jobs:
       - name: Install Typst
         uses: typst-community/setup-typst@v4
         with:
-          typst-version: 0.13.1
+          typst-version: 0.14.0
 
       - name: Install smk-sto template package from source
         env:
