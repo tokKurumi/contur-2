@@ -2,6 +2,7 @@
 /// @brief Unit tests for FileSink — verifies persistence, formatting, append semantics,
 ///        thread safety, and graceful handling of unwritable paths.
 
+#include <algorithm>
 #include <atomic>
 #include <filesystem>
 #include <fstream>
