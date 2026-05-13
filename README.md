@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/tokKurumi/contur-2/actions/workflows/ci.yml/badge.svg)](https://github.com/tokKurumi/contur-2/actions/workflows/ci.yml)
 [![Generate & Publish Doxygen Docs](https://github.com/tokKurumi/contur-2/actions/workflows/docs.yml/badge.svg)](https://github.com/tokKurumi/contur-2/actions/workflows/docs.yml)
-[![CodeQL](https://github.com/tokKurumi/contur-2/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/tokKurumi/contur-2/actions/workflows/github-code-scanning/codeql)
+[![CodeQL](https://github.com/tokKurumi/contur-2/actions/workflows/codeql.yml/badge.svg)](https://github.com/tokKurumi/contur-2/actions/workflows/codeql.yml)
 [![Dependabot Updates](https://github.com/tokKurumi/contur-2/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/tokKurumi/contur-2/actions/workflows/dependabot/dependabot-updates)
 
 Contur 2 is an educational OS-kernel simulator written in C++20. The project models core kernel subsystems such as processes and scheduling, memory management, synchronization, IPC, syscalls, and a simple file system.
