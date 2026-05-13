@@ -535,36 +535,26 @@ Naming constraints:
 
 ---
 
-## Phase 14: App Shell (`app/`) — *FTXUI-based, replaces CLI-menu demos*
+## Phase 14: App Shell (`app/`)
 
-**Goal**: Provide a runnable end-user entry point. The original plan for a Debug/Release CLI menu plus a separate
-`demos/*.cpp` library was **superseded** during Phase 13 by the FTXUI TUI (see [13.11]–[13.12]): all subsystem demos
-are exercised live inside the TUI from sample processes spawned by `src/app/main.cpp`.
+**Goal**: Provide the interactive end-user entry point. `src/app/main.cpp` builds a kernel via `KernelBuilder`,
+spawns sample processes, and launches the FTXUI-based interactive TUI as the runnable front-end of the simulator.
 
 **Dependencies**: Phases 10, 11, 12, 13
-
-### Status
-
-- `src/demos/CMakeLists.txt` is retained as an `INTERFACE` library placeholder (no sources). It is kept so that
-    targeted standalone demo programs can be added later without restructuring the build, but it is not used today.
-- The previously planned `Stepper` / `CONTUR_STEP_MODE` step-mode mechanism is **not implemented**; the FTXUI app
-    provides interactive pause/seek/autoplay instead.
 
 ### Tasks
 
 | # | Task | Files | Test | Done |
 |---|---|---|---|---|
-| 14.1 | FTXUI-based app shell launching the simulator with sample processes (replaces planned CLI menu) | `src/app/main.cpp`, `src/app/CMakeLists.txt` | covered by `test_tui_ftxui_integration.cpp` | ✅ |
+| 14.1 | FTXUI-based app shell launching the simulator with sample processes | `src/app/main.cpp`, `src/app/CMakeLists.txt` | covered by `test_tui_ftxui_integration.cpp` | ✅ |
 | 14.2 | Demo kernel builder + sample programs (`makeProgramAddOnePlusOne`, counter loop, CPU-heavy, idle/background NOP loops) inside the app shell | `src/app/main.cpp` | exercised end-to-end at runtime | ✅ |
 | 14.3 | Trace dump on shutdown (kernel `BufferSink` flushed to stdout after the TUI exits) | `src/app/main.cpp` | exercised end-to-end at runtime | ✅ |
-| 14.4 | `contur2_demos` placeholder CMake target retained for future standalone demos | `src/demos/CMakeLists.txt` | — | ✅ |
-| 14.5 | (Optional, future) Re-introduce per-subsystem standalone demo programs (architecture, scheduling, sync, deadlock, IPC, filesystem, multiprocessor, interpreter, userspace) under `src/demos/src/` | `demos/src/*.cpp` | — | |
-| 14.6 | (Optional, future) `Stepper` utility + `CONTUR_STEP_MODE` for step-by-step CLI walkthroughs | `demos/include/demos/stepper.h` + `.cpp` | — | |
+| 14.4 | `contur2_demos` `INTERFACE` placeholder CMake target for future standalone demos | `src/demos/CMakeLists.txt` | — | ✅ |
 
 ### Acceptance Criteria
 - `contur2` app launches the FTXUI TUI, drives sample processes through the scheduler, and exits cleanly on user quit.
 - Kernel trace events are surfaced live in the TUI log pane and dumped to stdout on shutdown.
-- The `contur2_demos` target builds (currently as `INTERFACE`) and remains a valid extension point for future demos.
+- The `contur2_demos` target builds as an `INTERFACE` placeholder reserved for future standalone demos.
 
 ---
 
@@ -917,7 +907,7 @@ Phase 10: Kernel                   ████████             ✅  (4 
 Phase 11: Host MT Runtime          ████████████         ✅  (13 tasks, 39 tests)
 Phase 12: Tracing                  ████████             ✅  (9 tasks,  6 tests)
 Phase 13: TUI (incl. FTXUI)        ████████████████     ✅  (15 tasks, 69 tests)
-Phase 14: TUI app shell            ████████             🔄  (replaced original CLI-menu demos; FTXUI app in `src/app/main.cpp`)
+Phase 14: App Shell                ████████             ✅  (4 tasks, FTXUI app in `src/app/main.cpp`)
 Phase 15: User Space (native)      ████████████         ✅  (12 tasks, 29 tests)
 Phase 16: Tests                    ████████████████     🔄  (extended/integration suites in place; coverage report + dedicated flow tests pending)
 Phase 17: Docs + CI                ████████             🔄  (Doxygen target + docs.yml ✅ · README ✅ · GCC×Clang Release CI ✅ · Debug-axis + coverage + N-axis pending)
