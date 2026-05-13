@@ -52,7 +52,7 @@ contur/
     ├── build.sh                            # Build driver script
     ├── app/
     │   ├── CMakeLists.txt
-    │   └── main.cpp                        # Entry point — CLI menu
+    │   └── main.cpp                        # Entry point — FTXUI app shell
     ├── CMakeLists.txt                      # Library target: contur2_lib
     ├── include/
     │   └── contur/
@@ -66,7 +66,7 @@ contur/
     │       │   ├── interrupt.h             # Interrupt enum class
     │       │   ├── register_file.h         # RegisterFile (16 registers)
     │       │   ├── block.h                 # Block — single memory cell
-    │       │   └── isa.h                   # ISA constants & helpers
+    │       │   └── isa.h                   # ISA constants & helpers (header-only)
     │       ├── memory/                     # Memory subsystem
     │       │   ├── i_memory.h              # IMemory interface
     │       │   ├── physical_memory.h       # PhysicalMemory (RAM simulation)
@@ -76,17 +76,16 @@ contur/
     │       │   ├── virtual_memory.h        # VirtualMemory implementation
     │       │   └── page_table.h            # PageTable for paging simulation
     │       ├── process/                    # Process subsystem
-    │       │   ├── i_process.h             # IProcess interface
-    │       │   ├── process.h               # Process implementation
-    │       │   ├── pcb.h                   # PCB (Process Control Block)
-    │       │   ├── process_image.h         # ProcessImage (full in-memory repr)
-    │       │   ├── priority.h              # Priority levels, policies
-    │       │   └── state.h                 # ProcessState enum class
+    │       │   ├── i_process.h             # IProcess interface (read-only)
+    │       │   ├── pcb.h                   # PCB (Process Control Block, PIMPL)
+    │       │   ├── process_image.h         # ProcessImage (PCB + code + RegisterFile)
+    │       │   ├── priority.h              # Priority levels, struct Priority
+    │       │   └── state.h                 # ProcessState enum + isValidTransition()
     │       ├── execution/                  # Execution engines
     │       │   ├── i_execution_engine.h    # IExecutionEngine interface
     │       │   ├── interpreter_engine.h    # Bytecode interpreter
-    │       │   ├── native_engine.h         # Real OS process manager
-    │       │   └── execution_context.h     # Shared execution context
+    │       │   ├── native_engine.h         # Real host-process engine (Win32 + POSIX)
+    │       │   └── execution_context.h     # ExecutionResult + StopReason
     │       ├── cpu/                        # CPU simulation
     │       │   ├── i_cpu.h                 # ICPU interface
     │       │   ├── cpu.h                   # CPU implementation
@@ -106,7 +105,11 @@ contur/
     │       ├── dispatch/                   # Dispatcher subsystem
     │       │   ├── i_dispatcher.h          # IDispatcher interface
     │       │   ├── dispatcher.h            # Uniprocessor dispatcher
-    │       │   └── mp_dispatcher.h         # Multiprocessor dispatcher
+    │       │   ├── mp_dispatcher.h         # Multiprocessor dispatcher
+    │       │   ├── i_dispatch_runtime.h    # IDispatchRuntime strategy interface
+    │       │   ├── serial_dispatch_runtime.h  # Serial baseline runtime (N = 1 path)
+    │       │   ├── dispatcher_pool.h       # Host-thread worker pool (N >= 1)
+    │       │   └── threading_config.h      # HostThreadingConfig (runtime-owned)
     │       ├── sync/                       # Synchronization primitives
     │       │   ├── i_sync_primitive.h      # ISyncPrimitive interface
     │       │   ├── mutex.h                 # Mutex
@@ -135,24 +138,36 @@ contur/
     │       │   ├── console_device.h        # Console output device
     │       │   ├── network_device.h        # Network (LAN) simulation
     │       │   └── device_manager.h        # Device registry & dispatch
-    │       ├── tui/                        # Terminal UI / Visualization
-    │       │   ├── i_renderer.h            # IRenderer interface
-    │       │   ├── dashboard.h             # Main dashboard layout
-    │       │   ├── process_view.h          # Process state table / state diagram
-    │       │   ├── memory_map_view.h       # Physical/virtual memory map
-    │       │   ├── scheduler_view.h        # Ready/blocked queue visualization
-    │       │   └── ansi.h                  # ANSI escape code helpers
+    │       ├── tui/                        # Terminal UI / Visualization (external module)
+    │       │   ├── tui_models.h            # Immutable Tui* DTO contracts
+    │       │   ├── tui_commands.h          # TuiCommand / TuiCommandKind / TuiPlaybackConfig
+    │       │   ├── i_kernel_read_model.h   # IKernelReadModel adapter contract
+    │       │   ├── history_buffer.h        # Bounded ring buffer for UI history
+    │       │   ├── i_tui_controller.h      # ITuiController + TuiController (PIMPL)
+    │       │   ├── i_renderer.h            # Backend-agnostic IRenderer contract
+    │       │   ├── dashboard.h             # Dashboard view contract
+    │       │   ├── process_view.h          # Process state table contract
+    │       │   ├── memory_map_view.h       # Memory map view contract
+    │       │   ├── scheduler_view.h        # Ready/blocked queue view contract
+    │       │   ├── ftxui_renderer.h        # FTXUI-backed IRenderer implementation
+    │       │   └── ftxui_app.h             # FtxuiApp — interactive screen / input loop
     │       ├── tracing/                    # Tracing & diagnostics subsystem
     │       │   ├── i_tracer.h              # ITracer interface
     │       │   ├── tracer.h                # Tracer implementation (active in Debug+CONTUR_TRACE)
     │       │   ├── null_tracer.h           # NullTracer — no-op stub (Release / trace disabled)
     │       │   ├── trace_event.h           # TraceEvent — structured trace record
+    │       │   ├── trace_level.h           # TraceLevel enum + traceLevelToString
     │       │   ├── trace_scope.h           # TraceScope — RAII indentation guard
-    │       │   └── trace_sink.h            # ITraceSink — output target (console, file, buffer)
+    │       │   ├── trace_sink.h            # ITraceSink — output target contract
+    │       │   ├── console_sink.h          # ConsoleSink — stdout-backed ITraceSink
+    │       │   ├── file_sink.h             # FileSink — file-backed ITraceSink
+    │       │   └── buffer_sink.h           # BufferSink — in-memory ITraceSink (TUI / tests)
     │       └── kernel/                     # Kernel — top-level API
-    │           ├── i_kernel.h              # IKernel interface
-    │           ├── kernel.h                # Kernel implementation
-    │           └── kernel_builder.h        # Builder / DI container
+    │           ├── i_kernel.h              # IKernel interface (+ ProcessConfig, KernelSnapshot)
+    │           ├── kernel.h                # Kernel implementation (PIMPL)
+    │           ├── kernel_builder.h        # KernelBuilder — DI composition root
+    │           ├── i_kernel_diagnostics.h  # IKernelDiagnostics + KernelDiagnosticsSnapshot
+    │           └── kernel_diagnostics.h    # KernelDiagnostics adapter
     ├── contur/                             # Implementation sources (.cpp)
     │   ├── core/
     │   ├── arch/
@@ -171,44 +186,54 @@ contur/
     │   ├── tracing/
     │   └── kernel/
     ├── demos/
-    │   ├── CMakeLists.txt
-    │   ├── include/
-    │   │   └── demos/
-    │   │       └── demos.h
-    │   └── src/
-    │       ├── demo_context.cpp
-    │       ├── demo_architecture.cpp
-    │       ├── demo_process.cpp
-    │       ├── demo_memory.cpp
-    │       ├── demo_scheduling.cpp
-    │       ├── demo_synchronization.cpp
-    │       ├── demo_ipc.cpp
-    │       ├── demo_filesystem.cpp
-    │       ├── demo_deadlock.cpp
-    │       ├── demo_multiprocessor.cpp
-    │       ├── demo_interpreter.cpp
-    │       └── demo_native.cpp
+    │   └── CMakeLists.txt                  # INTERFACE placeholder for future standalone demos
     └── tests/
         ├── CMakeLists.txt
-        ├── unit/
-        │   ├── test_register_file.cpp
-        │   ├── test_physical_memory.cpp
-        │   ├── test_process.cpp
-        │   ├── test_scheduler.cpp
-        │   ├── test_mmu.cpp
-        │   ├── test_cpu.cpp
-        │   ├── test_priority.cpp
-        │   ├── test_page_replacement.cpp
-        │   ├── test_deadlock_detector.cpp
-        │   ├── test_ipc.cpp
-        │   ├── test_syscall.cpp
-        │   └── test_filesystem.cpp
-        └── integration/
-            ├── test_dispatcher_flow.cpp
-            ├── test_interpreter_execution.cpp
+        ├── test_main.cpp                   # gtest_main override
+        ├── conanfile.txt                   # GTest dependency
+        ├── fixtures/                       # Native-engine fixtures (C hello-world)
+        │   ├── native_hello.c
+        │   └── native_test_paths.h.in
+        ├── unit/                           # Kernel/TUI unit tests (one *.cpp per subsystem)
+        │   ├── test_result.cpp, test_clock.cpp, test_event.cpp, test_register_file.cpp
+        │   ├── test_physical_memory.cpp, test_page_table.cpp, test_page_replacement.cpp
+        │   ├── test_mmu.cpp, test_virtual_memory.cpp (+ *_extended.cpp)
+        │   ├── test_process_state.cpp, test_priority.cpp, test_pcb.cpp, test_process_image.cpp
+        │   ├── test_alu.cpp, test_cpu.cpp, test_device_manager.cpp
+        │   ├── test_interpreter_engine.cpp
+        │   ├── test_fcfs.cpp, test_round_robin.cpp, test_spn.cpp, test_srt.cpp,
+        │   │   test_hrrn.cpp, test_priority_policy.cpp, test_mlfq.cpp,
+        │   │   test_statistics.cpp, test_scheduler.cpp (+ *_extended.cpp)
+        │   ├── test_mutex.cpp, test_semaphore.cpp, test_deadlock_detector.cpp,
+        │   │   test_dispatcher.cpp, test_mp_dispatcher.cpp
+        │   ├── test_pipe.cpp, test_shared_memory.cpp, test_message_queue.cpp,
+        │   │   test_ipc_manager.cpp, test_syscall_table.cpp
+        │   ├── test_block_allocator.cpp, test_simple_fs.cpp
+        │   ├── test_kernel_builder.cpp, test_kernel_diagnostics.cpp
+        │   ├── test_threading_config.cpp, test_dispatcher_pool.cpp,
+        │   │   test_scheduler_concurrent.cpp, test_policy_contracts.cpp,
+        │   │   test_sync_layers.cpp, test_priority_inversion.cpp,
+        │   │   test_resource_contention.cpp, test_deadlock_detector_concurrent.cpp,
+        │   │   test_tracer_concurrent.cpp
+        │   ├── test_buffer_sink.cpp, test_tracer.cpp
+        │   ├── test_native_engine.cpp
+        │   └── test_tui_models.cpp, test_tui_commands.cpp, test_tui_controller.cpp,
+        │       test_tui_history_buffer.cpp, test_tui_read_model.cpp,
+        │       test_tui_renderer_contracts.cpp, test_tui_ftxui_renderer.cpp
+        └── integration/                    # End-to-end sweeps through IKernel
             ├── test_kernel_api.cpp
-            └── test_ipc_flow.cpp
+            ├── test_kernel_end_to_end.cpp
+            ├── test_process_scheduling_integration.cpp
+            ├── test_deterministic_multithread.cpp
+            ├── test_native_kernel_flow.cpp
+            ├── test_tui_tick_navigation.cpp
+            └── test_tui_ftxui_integration.cpp
 ```
+
+> The `demos/` target is an `INTERFACE` placeholder kept so future standalone demo
+> programs can be added without restructuring the build. The end-user entry point is the
+> FTXUI app in [`src/app/main.cpp`](src/app/main.cpp), which spawns sample processes and
+> drives them through a live MVC TUI (see [Section 14](#14-terminal-ui--visualization)).
 
 ### Code Organization
 
@@ -221,8 +246,8 @@ contur/
 | `src/include/contur/syscall/` | **System calls** — syscall table, handler dispatch |
 | `src/include/contur/fs/` | **File system** — inode-based FS simulation |
 | `src/include/contur/tui/` | **Terminal UI** — ANSI-based dashboard, process/memory/scheduler views |
-| `src/app/` | **Entry point** — `main.cpp` with interactive CLI menu |
-| `src/demos/` | **Demo functions** — one per subsystem, receives `DemoContext&`; step-by-step in Debug |
+| `src/app/` | **Entry point** — `main.cpp` builds a kernel and launches `FtxuiApp` |
+| `src/demos/` | **Placeholder target** — currently `INTERFACE`-only; reserved for future standalone demo programs |
 | `src/tests/` | **Tests** — unit and integration tests (Google Test via Conan) |
 
 ### Layer Dependency Graph (Dependency Inversion Applied)
@@ -303,13 +328,13 @@ Process priority is a first-class concept with a dedicated subsystem:
 
 ```cpp
 enum class PriorityLevel : std::int8_t {
-    Realtime  = 0,   // Highest
-    High      = 1,
+    Realtime    = 0,   // Highest
+    High        = 1,
     AboveNormal = 2,
-    Normal    = 3,   // Default
+    Normal      = 3,   // Default
     BelowNormal = 4,
-    Low       = 5,
-    Idle      = 6    // Lowest
+    Low         = 5,
+    Idle        = 6    // Lowest
 };
 
 struct Priority {
@@ -600,100 +625,22 @@ auto kernel = KernelBuilder()
 | `FileSink` | Writes to a log file (plain text, no colors) |
 | `BufferSink` | Stores in `std::vector<TraceEvent>` for programmatic inspection (tests) |
 
-### 8. Step-by-Step Execution Mode
+### 8. Interactive App Shell (FTXUI)
 
-Demo programs support two execution modes controlled by the build configuration:
+The end-user entry point is the **FTXUI-based interactive TUI** in `src/app/main.cpp`.
+Sample processes are spawned at start-up and driven through the live MVC TUI; the user
+controls execution with keyboard shortcuts: autoplay, single-tick, seek by ±1 / ±10 over
+UI history, speed up / down, scroll log pane, quit.
 
-| Build | Mode | Behavior |
-|---|---|---|
-| **Release** | Continuous | Demos run from start to finish without pausing |
-| **Debug** | Step-by-step | After each logical step, execution pauses and waits for user input (Enter to continue, `q` to skip to end) |
+What the shell provides:
 
-#### Implementation
+- live process table, scheduler queues and memory map refresh on every kernel tick;
+- pause autoplay, single-step, jump backward / forward over UI history without rolling
+    back kernel state, and watch the trace stream simultaneously;
+- the tracer's `BufferSink` feeds the log pane of `FtxuiApp` directly, so structured
+    tracing and stepping converge into one screen.
 
-Step-by-step mode is implemented via a lightweight `Stepper` utility — **not** baked into the kernel. It lives in the `demos/` layer and wraps demo logic:
-
-```cpp
-// demos/include/demos/stepper.h
-namespace contur::demos {
-
-class Stepper {
-public:
-    explicit Stepper(std::string_view demoName);
-
-    // Displays step description and pauses in Debug mode.
-    // In Release mode, only prints the description (no pause).
-    void step(std::string_view description);
-
-    // Check whether user requested skip-to-end
-    bool isSkipping() const noexcept;
-
-private:
-    struct Impl;
-    std::unique_ptr<Impl> impl_;
-};
-
-} // namespace contur::demos
-```
-
-#### Compile-Time Control
-
-```cmake
-target_compile_definitions(contur2_demos
-    PRIVATE
-        $<$<CONFIG:Debug>:CONTUR_STEP_MODE>
-)
-```
-
-Inside `Stepper::step()`:
-
-```cpp
-void Stepper::step(std::string_view description)
-{
-    std::cout << "\n── Step: " << description << " ──\n";
-#ifdef CONTUR_STEP_MODE
-    if (!impl_->skipping) {
-        std::cout << "[Press Enter to continue, 'q' + Enter to skip to end]\n";
-        std::string input;
-        std::getline(std::cin, input);
-        if (!input.empty() && input[0] == 'q') {
-            impl_->skipping = true;
-        }
-    }
-#endif
-}
-```
-
-#### Usage in Demos
-
-```cpp
-void demoScheduling(DemoContext& ctx)
-{
-    Stepper step("Scheduling Algorithms");
-
-    step.step("Creating 5 processes with different priorities");
-    // ... create processes ...
-
-    step.step("Running FCFS scheduling");
-    // ... run FCFS ...
-
-    step.step("Switching to Round Robin (time slice = 3)");
-    // ... switch policy, run ...
-
-    step.step("Comparing SPN vs SRT results");
-    // ... run both, display comparison ...
-}
-```
-
-#### Interaction with Tracing
-
-When **both** tracing and step-by-step mode are active (Debug build with `CONTUR_TRACE_ENABLED` + `CONTUR_STEP_MODE`), the student gets a full educational experience:
-1. `Stepper` pauses before each high-level step
-2. The student presses Enter
-3. The step executes, and the `Tracer` prints the detailed hierarchical call trace in real time
-4. `Stepper` pauses again for the next step
-
-This creates a "debugger-like" walkthrough of the entire OS simulation.
+See [Section 14](#14-terminal-ui--visualization) for the MVC contracts and FTXUI backend.
 
 ### 9. Real Host Multithreading (N >= 1 Configurable Threads)
 
@@ -1263,9 +1210,12 @@ struct TuiPlaybackConfig {
 
 struct TuiSnapshot {
     Tick currentTick = 0;
-    std::vector<ProcessInfo> processes;
-    SchedulerSnapshot scheduler;
-    MemoryMapSnapshot memory;
+    std::size_t processCount = 0;
+    std::vector<TuiProcessSnapshot> processes;
+    TuiSchedulerSnapshot scheduler;
+    TuiMemorySnapshot memory;
+    std::uint64_t sequence = 0;          // monotonic snapshot id
+    std::uint64_t epoch = 0;             // deterministic-mode epoch
 };
 
 struct TuiHistoryEntry {
@@ -1273,11 +1223,19 @@ struct TuiHistoryEntry {
     TuiSnapshot snapshot;
 };
 
+enum class TuiControllerState : std::uint8_t { Idle, Playing, Paused };
+
 class ITuiController {
 public:
     virtual ~ITuiController() = default;
-    virtual Result<void> dispatch(const TuiCommand& command) = 0;
-    [[nodiscard]] virtual const TuiSnapshot& current() const = 0;
+
+    [[nodiscard]] virtual Result<void> dispatch(const TuiCommand& command) = 0;
+    [[nodiscard]] virtual Result<void> advanceAutoplay(std::uint32_t elapsedMs) = 0;
+
+    [[nodiscard]] virtual const TuiSnapshot& current() const noexcept = 0;
+    [[nodiscard]] virtual TuiControllerState state() const noexcept = 0;
+    [[nodiscard]] virtual std::size_t historySize() const noexcept = 0;
+    [[nodiscard]] virtual std::size_t historyCursor() const noexcept = 0;
 };
 
 class IKernelReadModel {
@@ -1484,28 +1442,37 @@ if(NOT CMAKE_CXX_COMPILER)
     endif()
 endif()
 
-# Host-thread runtime configuration (N >= 1)
-option(CONTUR2_ENABLE_HOST_THREADS "Enable real host-thread runtime" OFF)
-set(CONTUR2_NUM_HOST_THREADS "1" CACHE STRING "Number of host worker threads (>=1)")
-option(CONTUR2_DETERMINISTIC_MT "Enable deterministic multithreaded scheduling mode" ON)
-
-if(CONTUR2_ENABLE_HOST_THREADS)
-    find_package(Threads REQUIRED)
+# Layer-level toggles (mirrors the real CMakeLists.txt)
+option(CONTUR2_BUILD_TUI "Build TUI layer"               ON)
+option(CONTUR2_BUILD_APP "Build application executable"  ON)
+option(CONTUR2_ENABLE_TRACING "Enable kernel tracing (auto-ON in Debug)" OFF)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CONTUR2_ENABLE_TRACING ON CACHE BOOL "" FORCE)
 endif()
 
-# contur2_lib — kernel (sources in contur/ excluding contur/tui/)
-# contur2_tui — TUI layer (sources in contur/tui/ only, links contur2_lib publicly)
-add_subdirectory(contur)    # defines contur2_lib + contur2_tui
+# Sources: contur2_lib globs contur/*.cpp excluding contur/tui/
+# contur2_tui globs contur/tui/*.cpp and PUBLIC-links contur2_lib + ftxui::ftxui
+# Both targets are defined directly in this root CMakeLists.txt.
 add_subdirectory(demos)
-add_subdirectory(app)
+if(CONTUR2_BUILD_APP)
+    if(NOT CONTUR2_BUILD_TUI)
+        message(FATAL_ERROR "CONTUR2_BUILD_APP=ON requires CONTUR2_BUILD_TUI=ON")
+    endif()
+    add_subdirectory(app)
+endif()
 
-# Optional: tests
 option(CONTUR2_BUILD_TESTS "Build unit and integration tests" ON)
 if(CONTUR2_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()
 ```
+
+> The runtime threading parameters (`hostThreadCount`, `deterministicMode`,
+> `workStealingEnabled`) are **not** CMake options — they live inside the dispatch layer as
+> `HostThreadingConfig` and are injected at composition time through `KernelBuilder`'s
+> dispatch-runtime wiring. The kernel itself stays runtime-agnostic by design (see
+> Section 9 «Real Host Multithreading»).
 
 ### Dependency Management (Conan, `conanfile.txt` only)
 
@@ -1537,91 +1504,25 @@ target_link_libraries(your_test_target PRIVATE gtest::gtest)
 
 ### CMake Presets
 
-```json
-{
-    "version": 6,
-    "configurePresets": [
-        {
-            "name": "debug",
-            "displayName": "Debug (Clang)",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build/debug",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug",
-                "CMAKE_CXX_COMPILER": "clang++",
-                "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic -fsanitize=address,undefined",
-                "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined",
-                "CONTUR2_ENABLE_TRACING": "ON",
-                "CONTUR2_ENABLE_HOST_THREADS": "ON",
-                "CONTUR2_NUM_HOST_THREADS": "4",
-                "CONTUR2_DETERMINISTIC_MT": "ON"
-            }
-        },
-        {
-            "name": "release",
-            "displayName": "Release (Clang)",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build/release",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
-                "CMAKE_CXX_COMPILER": "clang++",
-                "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic",
-                "CONTUR2_ENABLE_HOST_THREADS": "ON",
-                "CONTUR2_NUM_HOST_THREADS": "4",
-                "CONTUR2_DETERMINISTIC_MT": "OFF"
-            }
-        },
-        {
-            "name": "gcc-debug",
-            "displayName": "Debug (GCC)",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build/gcc-debug",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug",
-                "CMAKE_CXX_COMPILER": "g++",
-                "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic -fsanitize=address,undefined",
-                "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined",
-                "CONTUR2_ENABLE_HOST_THREADS": "ON",
-                "CONTUR2_NUM_HOST_THREADS": "4",
-                "CONTUR2_DETERMINISTIC_MT": "ON"
-            }
-        },
-        {
-            "name": "debug-tsan",
-            "displayName": "Debug (Clang, TSAN)",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build/debug-tsan",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug",
-                "CMAKE_CXX_COMPILER": "clang++",
-                "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic -fsanitize=thread",
-                "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=thread",
-                "CONTUR2_ENABLE_HOST_THREADS": "ON",
-                "CONTUR2_NUM_HOST_THREADS": "4",
-                "CONTUR2_DETERMINISTIC_MT": "ON"
-            }
-        }
-    ],
-    "buildPresets": [
-        { "name": "debug", "configurePreset": "debug" },
-        { "name": "release", "configurePreset": "release" },
-        { "name": "gcc-debug", "configurePreset": "gcc-debug" },
-        { "name": "debug-tsan", "configurePreset": "debug-tsan" }
-    ],
-    "testPresets": [
-        {
-            "name": "debug",
-            "configurePreset": "debug",
-            "output": { "outputOnFailure": true }
-        },
-        {
-            "name": "debug-tsan",
-            "configurePreset": "debug-tsan",
-            "output": { "outputOnFailure": true }
-        }
-    ]
-}
-```
+`src/CMakePresets.json` ships three families of presets (configure + build + test), keyed
+on compiler and host platform. The kernel is sanitizer-aware: Debug presets for POSIX
+hosts enable ASan/UBSan via flags, and a dedicated TSAN family covers concurrent paths.
+
+| Family | Configure preset(s) | Purpose |
+|---|---|---|
+| Default (Clang, POSIX) | `debug`, `release` | Day-to-day Linux/macOS dev with `-fsanitize=address,undefined` in Debug |
+| GCC (POSIX) | `gcc-debug`, `gcc-release` | Compatibility lane for GCC under same sanitizer policy |
+| Windows (clang-cl) | `win-debug`, `win-release` | Windows dev (no `-fsanitize=` flags) |
+| ThreadSanitizer | `tsan-debug`, `tsan-release`, `tsan-gcc-debug`, `tsan-gcc-release`, `tsan-win-debug`, `tsan-win-release` | Race detection on multithreaded paths |
+
+Each preset inherits from one of four hidden bases (`base-debug`, `base-release`,
+`base-tsan-debug`, `base-tsan-release`) which set `CMAKE_BUILD_TYPE` and
+`CONTUR2_ENABLE_TRACING`. `condition.hostSystemName` gates POSIX vs Windows variants so
+the same `CMakePresets.json` works on all three host OSes.
+
+Buildable presets and matching `ctest --preset` test presets exist for every configure
+preset listed above. There are **no** CMake-level threading knobs in any preset; threading
+behaviour is configured by the composition root (`KernelBuilder`).
 
 ### Build & Run
 
@@ -1652,22 +1553,17 @@ cmake --build --preset release
 cmake --preset gcc-debug -S src
 cmake --build --preset gcc-debug
 
-# Explicit N=1 baseline (host threads enabled, single worker)
-cmake -S src -B src/build/n1 -G Ninja \
-    -DCONTUR2_ENABLE_HOST_THREADS=ON \
-    -DCONTUR2_NUM_HOST_THREADS=1 \
-    -DCONTUR2_DETERMINISTIC_MT=ON
-cmake --build src/build/n1
-
-# N=4 deterministic multithreaded run (debug)
-cmake --preset debug -S src -DCONTUR2_NUM_HOST_THREADS=4 -DCONTUR2_DETERMINISTIC_MT=ON
-cmake --build --preset debug
-
-# Data-race lane
-cmake --preset debug-tsan -S src
-cmake --build --preset debug-tsan
-ctest --preset debug-tsan
+# Data-race lane (Clang TSAN, Release-optimised, recommended for CI)
+cmake --preset tsan-release -S src
+cmake --build --preset tsan-release
+ctest --preset tsan-release
 ```
+
+> The number of host threads, deterministic-mode flag and work-stealing policy are
+> selected at composition time in `KernelBuilder` (via `HostThreadingConfig` consumed by
+> `DispatcherPool`), not via CMake. Multithreaded scenarios in tests use this same
+> composition path — see `test_dispatcher_pool.cpp`, `test_scheduler_concurrent.cpp` and
+> `test_deterministic_multithread.cpp`.
 
 ### Build Script
 
@@ -1825,54 +1721,60 @@ target_link_libraries(contur2_integration_tests PRIVATE gtest::gtest)
 
 ## Implementation Order
 
-Recommended implementation sequence (bottom-up, each step builds on the previous):
+Phases mirror `.github/IMPLEMENTATION_PLAN.md` — the canonical source of truth for stage
+composition and per-stage task lists. The numbering below matches that plan exactly.
 
 | Phase | Components | Deliverables |
 |---|---|---|
-| **Phase 1: Foundation** | `core/` (types, error, clock, event) + `arch/` (instruction, interrupt, register_file, block) | Type system, scoped enums, `Result<T>`, `IClock` |
-| **Phase 2: Memory** | `memory/` (IMemory, PhysicalMemory, IMMU, MMU, PageTable) | Working memory simulation with unit tests |
-| **Phase 3: Process** | `process/` (state, priority, PCB, ProcessImage) | Process model with composition, priority system |
-| **Phase 4: CPU** | `cpu/` (ICPU, CPU, ALU) + `io/` (IDevice, ConsoleDevice, NetworkDevice) | Fetch-decode-execute with I/O |
-| **Phase 5: Interpreter** | `execution/` (IExecutionEngine, InterpreterEngine) | Full instruction interpretation |
-| **Phase 6: Scheduling** | `scheduling/` (IScheduler, Scheduler, all policies, Statistics) | All 7 scheduling algorithms + page replacement |
-| **Phase 7: Dispatch** | `dispatch/` (IDispatcher, Dispatcher, MPDispatcher) + `sync/` (Mutex, Semaphore, DeadlockDetector) | Process lifecycle, synchronization, deadlock detection |
-| **Phase 8: IPC & Syscalls** | `ipc/` (Pipe, SharedMemory, MessageQueue) + `syscall/` (SyscallTable) | Inter-process communication, system call dispatch |
-| **Phase 9: File System** | `fs/` (IFileSystem, SimpleFS, Inode, BlockAllocator) | Inode-based FS simulation |
-| **Phase 10: Kernel** | `kernel/` (IKernel, Kernel, KernelBuilder) | Top-level API, DI wiring |
-| **Phase 10.5: Host Multithreading Runtime** | `dispatch/`, `scheduling/`, `sync/`, `kernel/` | Real host-thread runtime for N>=1, per-core queues + work stealing, deterministic mode, dual deadlock analysis |
-| **Phase 11: Tracing** | `tracing/` (ITracer, Tracer, NullTracer, TraceScope, sinks) | Hierarchical call tracing, compile-time toggle |
-| **Phase 12: TUI** | `tui/` (models, controller, history, `IRenderer`, panel contracts) | External MVC module with contracts-first playback/navigation |
-| **Phase 13: Demos** | `demos/` (Stepper, all demo functions) + `app/main.cpp` | Interactive CLI; step-by-step in Debug, continuous in Release |
-| **Phase 14: Native** | `execution/NativeEngine` | Real process management on host OS |
-| **Phase 15: Tests** | `tests/unit/` + `tests/integration/` | Full test coverage |
+| **Phase 0: Scaffolding** | `src/CMakeLists.txt`, `CMakePresets.json`, `build.sh`, `.clang-format`, `.clang-tidy` | Buildable empty project skeleton with two compilers |
+| **Phase 1: Foundation** | `core/` (types, error, clock, event) + `arch/` (instruction, interrupt, register_file, block, isa) | Type system, scoped enums, `Result<T>`, `IClock`, `Event<>`, ISA |
+| **Phase 2: Memory** | `memory/` (IMemory, PhysicalMemory, IMMU, Mmu, PageTable, 4 replacement policies, IVirtualMemory) | Memory + 4 page-replacement policies |
+| **Phase 3: Process** | `process/` (state, priority, PCB, ProcessImage, IProcess) | Process model with composition + priority |
+| **Phase 4: CPU + I/O** | `cpu/` (ICPU, Cpu, ALU) + `io/` (IDevice, ConsoleDevice, NetworkDevice, DeviceManager) | Fetch-decode-execute + I/O |
+| **Phase 5: Interpreter** | `execution/` (IExecutionEngine, ExecutionResult, InterpreterEngine) | Full instruction interpretation with tick budget |
+| **Phase 6: Scheduling** | `scheduling/` (IScheduler, Scheduler, all 7 policies, Statistics) | All scheduling algorithms + EWMA burst prediction |
+| **Phase 7: Dispatch + Sync** | `dispatch/` (IDispatcher, Dispatcher, MPDispatcher) + `sync/` (Mutex, Semaphore, CriticalSection, DeadlockDetector) | Process lifecycle, sync primitives, dual-graph deadlock detection |
+| **Phase 8: IPC + Syscalls** | `ipc/` (Pipe, SharedMemory, MessageQueue, IpcManager) + `syscall/` (SyscallTable) | IPC + system call dispatch |
+| **Phase 9: File System** | `fs/` (IFileSystem, SimpleFS, Inode, BlockAllocator, FileDescriptor) | Inode-based FS simulation |
+| **Phase 10: Kernel** | `kernel/` (IKernel, Kernel, KernelBuilder) | Top-level API + DI composition root |
+| **Phase 11: Host MT Runtime** | `dispatch/` (IDispatchRuntime, SerialDispatchRuntime, DispatcherPool, threading_config) + `scheduling/`/`sync/` upgrades | N>=1 runtime via DI; per-core queues + work stealing + deterministic mode + thread-aware deadlock graphs |
+| **Phase 12: Tracing** | `tracing/` (ITracer, Tracer, NullTracer, TraceScope, TraceEvent, TraceLevel, ITraceSink, ConsoleSink, FileSink, BufferSink) | Hierarchical tracing, compile-time toggle |
+| **Phase 13: TUI** | `tui/` (Tui* DTOs, commands, history buffer, controller, IRenderer, panel contracts, FtxuiRenderer, FtxuiApp) + `kernel/` diagnostics | External MVC module + FTXUI backend |
+| **Phase 14: App Shell** | `app/main.cpp` (FTXUI-driven launcher) + `demos/` (currently placeholder) | Interactive end-user entry point |
+| **Phase 15: Native** | `execution/NativeEngine` + `ProcessConfig.nativePath` | Real host-process engine (Win32 + POSIX) |
+| **Phase 16: Tests** | `tests/unit/` + `tests/integration/` (incl. `*_extended`, `*_concurrent`, deterministic-MT, native-flow) | Full test coverage (currently 862 tests) |
+| **Phase 17: Docs + CI** | Doxygen target, `.github/workflows/ci.yml`, `.github/workflows/docs.yml`, README | API docs published to GitHub Pages, CI matrix Clang/GCC × Release/TSAN-Release |
 
 ---
 
 ## Status Checklist
 
-- [ ] Foundation types and error handling (`core/`)
-- [ ] Architecture enums and register file (`arch/`)
-- [ ] Memory subsystem with MMU (`memory/`)
-- [ ] Process model with priorities (`process/`)
-- [ ] CPU with ALU (`cpu/`)
-- [ ] I/O device abstraction (`io/`)
-- [ ] Bytecode interpreter engine (`execution/`)
-- [ ] Scheduling policies (7 algorithms) (`scheduling/`)
-- [ ] Dispatcher and multiprocessor support (`dispatch/`)
-- [ ] Synchronization primitives (`sync/`)
-- [ ] Deadlock detection & prevention (`sync/deadlock_detector`)
-- [ ] IPC: pipes, shared memory, message queues (`ipc/`)
-- [ ] System calls interface (`syscall/`)
-- [ ] File system simulation (`fs/`)
-- [ ] Kernel API and builder (`kernel/`)
-- [ ] Real host multithreading runtime (`dispatch/`, `scheduling/`, `sync/`, `kernel/`) with N>=1 support
-- [ ] Tracing subsystem (`tracing/`)
-- [ ] Terminal UI / Visualization (`tui/`)
-- [ ] Step-by-step demo mode (`demos/stepper.h`)
-- [ ] Demo programs (`demos/`)
-- [ ] CLI entry point (`app/`)
-- [ ] Native execution engine (`execution/`)
-- [ ] Unit tests (`tests/unit/`)
-- [ ] Integration tests (`tests/integration/`)
-- [ ] `.clang-format` and `.clang-tidy` configuration
-- [ ] CI pipeline (Clang + GCC build matrix)
+Aligned with `.github/IMPLEMENTATION_PLAN.md` — see the plan for per-phase test counts and
+task tables. ✅ = complete, 🔄 = partial / superseded.
+
+- [x] Foundation types and error handling (`core/`)
+- [x] Architecture enums and register file (`arch/`)
+- [x] Memory subsystem with MMU + 4 replacement policies (`memory/`)
+- [x] Process model with priorities (`process/`)
+- [x] CPU with ALU (`cpu/`)
+- [x] I/O device abstraction (`io/`)
+- [x] Bytecode interpreter engine (`execution/interpreter_engine`)
+- [x] Scheduling policies (7 algorithms) + statistics (`scheduling/`)
+- [x] Dispatcher (uni + MP) (`dispatch/dispatcher`, `dispatch/mp_dispatcher`)
+- [x] Synchronization primitives (`sync/`)
+- [x] Deadlock detection & prevention — wait-for + lock-order + banker (`sync/deadlock_detector`)
+- [x] IPC: pipes, shared memory, message queues, registry (`ipc/`)
+- [x] System calls interface (`syscall/`)
+- [x] File system simulation (`fs/simple_fs`)
+- [x] Kernel API and builder (`kernel/`)
+- [x] Real host multithreading runtime (`dispatch/i_dispatch_runtime`, `serial_dispatch_runtime`, `dispatcher_pool`, `threading_config`) with N >= 1 support
+- [x] Tracing subsystem (`tracing/`) + sinks (`console_sink`, `file_sink`, `buffer_sink`)
+- [x] Terminal UI / Visualization — MVC contracts + FTXUI backend (`tui/`)
+- [x] Native execution engine (`execution/native_engine`) — Win32 + POSIX
+- [x] Interactive app entry point — FTXUI-driven (`src/app/main.cpp`)
+- [x] Unit tests (`tests/unit/`)
+- [x] Integration tests (`tests/integration/`)
+- [x] `.clang-format` and `.clang-tidy` configuration
+- [x] CI pipeline — Clang + GCC × Release + TSAN-Release (`.github/workflows/ci.yml`)
+- [x] Doxygen target + GitHub Pages publish workflow (`.github/workflows/docs.yml`)
+- [ ] 🔄 Coverage report and CI Debug-axis with ASAN/UBSAN — open items in `IMPLEMENTATION_PLAN.md` Phase 17
