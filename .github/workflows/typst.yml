@@ -1,0 +1,134 @@
+name: Build Typst Reports
+
+on:
+  push:
+    paths:
+      - 'docs/typst/**'
+      - '.github/typst-meta/**'
+      - '.github/workflows/typst.yml'
+  pull_request:
+    paths:
+      - 'docs/typst/**'
+      - '.github/typst-meta/**'
+      - '.github/workflows/typst.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    name: Discover meta variants
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - id: set
+        name: Build matrix from .github/typst-meta/*.typ
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(.github/typst-meta/*.typ)
+          if [[ ${#files[@]} -eq 0 ]]; then
+            echo "No meta files found in .github/typst-meta/" >&2
+            exit 1
+          fi
+          json=$(
+            for f in "${files[@]}"; do
+              id=$(basename "$f" .typ)
+              jq -nc --arg id "$id" --arg meta "$f" '{id: $id, meta: $meta}'
+            done | jq -sc .
+          )
+          echo "Discovered variants: $json"
+          echo "matrix=$json" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build (${{ matrix.author.id }})
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        author: ${{ fromJSON(needs.discover.outputs.matrix) }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Typst
+        uses: typst-community/setup-typst@v4
+        with:
+          typst-version: 0.13.1
+
+      - name: Install smk-sto template package from source
+        env:
+          SMK_STO_REPO: https://github.com/tokKurumi/smk-sto.git
+          SMK_STO_REF: main
+        run: |
+          set -euo pipefail
+          src=$(mktemp -d)
+          git clone --depth 1 --branch "$SMK_STO_REF" "$SMK_STO_REPO" "$src"
+
+          if [[ ! -f "$src/typst.toml" ]]; then
+            echo "typst.toml not found at the root of $SMK_STO_REPO@$SMK_STO_REF" >&2
+            ls -la "$src" >&2
+            exit 1
+          fi
+
+          name=$(awk -F'"' '/^[[:space:]]*name[[:space:]]*=/ {print $2; exit}' "$src/typst.toml")
+          version=$(awk -F'"' '/^[[:space:]]*version[[:space:]]*=/ {print $2; exit}' "$src/typst.toml")
+          if [[ -z "$name" || -z "$version" ]]; then
+            echo "Failed to parse name/version from typst.toml" >&2
+            cat "$src/typst.toml" >&2
+            exit 1
+          fi
+
+          dest="$HOME/.local/share/typst/packages/preview/$name/$version"
+          rm -rf "$dest" "$src/.git"
+          mkdir -p "$(dirname "$dest")"
+          mv "$src" "$dest"
+
+          echo "Installed @preview/$name:$version → $dest"
+          ls -la "$dest"
+
+      - name: Cache Typst packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/typst
+          key: ${{ runner.os }}-typst-pkgs-${{ hashFiles('docs/typst/*.typ') }}
+          restore-keys: |
+            ${{ runner.os }}-typst-pkgs-
+
+      - name: Apply author metadata
+        run: cp "${{ matrix.author.meta }}" docs/typst/_meta.typ
+
+      - name: Build all reports
+        run: |
+          set -euo pipefail
+          mkdir -p build/typst
+          shopt -s nullglob
+          built=0
+          for f in docs/typst/*.typ; do
+            name=$(basename "$f" .typ)
+            if [[ "$name" == _* ]]; then
+              continue
+            fi
+            echo "::group::Compile $f"
+            typst compile "$f" "build/typst/${name}.pdf"
+            echo "::endgroup::"
+            built=$((built + 1))
+          done
+          if [[ $built -eq 0 ]]; then
+            echo "No .typ reports found under docs/typst/" >&2
+            exit 1
+          fi
+          echo "Built $built report(s)."
+          ls -lah build/typst
+
+      - name: Upload reports artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.author.id }}
+          path: build/typst/*.pdf
+          if-no-files-found: error
