@@ -1,0 +1,135 @@
+name: CodeQL
+
+# Two parallel analyses:
+#   * c-cpp   — manual build mode: CodeQL needs the real build trace to see C++
+#               semantics. We reuse the project's clang Release preset so what
+#               CodeQL analyzes is exactly what CI ships.
+#   * actions — none build mode: GitHub Actions workflows are parsed, not built.
+#
+# Scheduled run keeps findings fresh even on quiet weeks. PRs against `main`
+# are gated; pushes to `main` update the baseline.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly, Monday 04:17 UTC. Off-peak; offset by 17 min to avoid the
+    # top-of-hour stampede on GitHub-hosted runners.
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # Required for the analyze action to upload SARIF results.
+  security-events: write
+  # Required by CodeQL to read workflow run metadata.
+  actions: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: c-cpp
+            build-mode: manual
+          - language: actions
+            build-mode: none
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          # security-and-quality = security-extended + maintainability/reliability
+          # queries. Trade-off: more noise, but the project is small enough
+          # that the extra coverage is worth it.
+          queries: security-and-quality
+
+      # ------------------------------------------------------------------
+      # C++ manual build
+      # ------------------------------------------------------------------
+      # Mirrors `.github/workflows/ci.yml` (clang Release preset) so that
+      # CodeQL traces the same translation units CI compiles. We don't
+      # enable TSAN — sanitizer flags don't change CodeQL's view of the
+      # code and would only slow analysis down.
+
+      - name: Cache pip downloads
+        if: matrix.language == 'c-cpp'
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-codeql-${{ hashFiles('.github/workflows/codeql.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-codeql-
+            ${{ runner.os }}-pip-conan-
+
+      - name: Cache Conan packages
+        if: matrix.language == 'c-cpp'
+        uses: actions/cache@v5
+        with:
+          path: ~/.conan2
+          key: ${{ runner.os }}-conan2-codeql-Release-${{ hashFiles('src/tests/conanfile.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-conan2-codeql-Release-
+            ${{ runner.os }}-conan2-Release-
+            ${{ runner.os }}-conan2-
+
+      - name: Install build dependencies
+        if: matrix.language == 'c-cpp'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build python3-pip
+          python3 -m pip install --user "conan>=2,<3"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          conan --version
+          clang++ --version
+
+      - name: Prepare Conan profile
+        if: matrix.language == 'c-cpp'
+        run: conan profile detect --force
+
+      - name: Install Conan dependencies
+        if: matrix.language == 'c-cpp'
+        working-directory: src
+        run: |
+          conan install tests \
+            -of build/release \
+            -s build_type=Release \
+            --build=missing
+
+      - name: Configure
+        if: matrix.language == 'c-cpp'
+        working-directory: src
+        run: |
+          cmake --preset release \
+            -UGTest_DIR \
+            -DCMAKE_PREFIX_PATH="$PWD/build/release/build/Release/generators" \
+            -DCMAKE_MODULE_PATH="$PWD/build/release/build/Release/generators" \
+            -DCMAKE_FIND_PACKAGE_PREFER_CONFIG=ON
+
+      - name: Build
+        if: matrix.language == 'c-cpp'
+        working-directory: src
+        run: cmake --build --preset release
+
+      # ------------------------------------------------------------------
+      # Analyze (both languages)
+      # ------------------------------------------------------------------
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:${{ matrix.language }}"
