@@ -886,7 +886,14 @@ No CMake flag is needed for the engine itself: Win32 headers come from the stand
 | 16 | `test_tui_history_buffer_extended.cpp` | TuiHistoryBufferExtendedTest | 14 |
 | 16 | `test_tui_read_model_extended.cpp` | TuiReadModelExtendedTest | 9 |
 | 16 | `test_virtual_memory_extended.cpp` | VirtualMemoryExtendedTest | 9 |
-| | | **Phase 13:** 69 · **Phase 15:** 29 · **Phase 16:** 225 | **Grand total: 862** |
+| 16 | `test_console_sink.cpp` | ConsoleSinkTest | 9 |
+| 16 | `test_file_sink.cpp` | FileSinkTest | 9 |
+| 16 | `test_trace_level.cpp` | TraceLevelTest, MakeTraceEventTest | 7 |
+| 16 | `test_console_device.cpp` | ConsoleDeviceTest | 12 |
+| 16 | `test_network_device.cpp` | NetworkDeviceTest | 14 |
+| 16 | `test_critical_section.cpp` | CriticalSectionTest | 10 |
+| 16 | `test_file_descriptor.cpp` | FileDescriptorTest, OpenModeTest, FileDescriptorTableTest | 21 |
+| | | **Phase 13:** 69 · **Phase 15:** 29 · **Phase 16:** 307 | **Grand total: 944** |
 
 ---
 
@@ -912,5 +919,5 @@ Phase 15: User Space (native)      ████████████         
 Phase 16: Tests                    ████████████████     🔄  (extended/integration suites in place; coverage report + dedicated flow tests pending)
 Phase 17: Docs + CI                ████████             🔄  (Doxygen target + docs.yml ✅ · README ✅ · GCC×Clang Release CI ✅ · Debug-axis + coverage + N-axis pending)
 
-Total: 862 tests passing across Phases 0–16
+Total: 944 tests passing across Phases 0–16
 ```

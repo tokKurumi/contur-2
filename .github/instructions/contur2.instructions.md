@@ -1742,7 +1742,7 @@ composition and per-stage task lists. The numbering below matches that plan exac
 | **Phase 13: TUI** | `tui/` (Tui* DTOs, commands, history buffer, controller, IRenderer, panel contracts, FtxuiRenderer, FtxuiApp) + `kernel/` diagnostics | External MVC module + FTXUI backend |
 | **Phase 14: App Shell** | `app/main.cpp` (FTXUI-driven launcher) + `demos/` (currently placeholder) | Interactive end-user entry point |
 | **Phase 15: Native** | `execution/NativeEngine` + `ProcessConfig.nativePath` | Real host-process engine (Win32 + POSIX) |
-| **Phase 16: Tests** | `tests/unit/` + `tests/integration/` (incl. `*_extended`, `*_concurrent`, deterministic-MT, native-flow) | Full test coverage (currently 862 tests) |
+| **Phase 16: Tests** | `tests/unit/` + `tests/integration/` (incl. `*_extended`, `*_concurrent`, deterministic-MT, native-flow) | Full test coverage (currently 944 tests) |
 | **Phase 17: Docs + CI** | Doxygen target, `.github/workflows/ci.yml`, `.github/workflows/docs.yml`, README | API docs published to GitHub Pages, CI matrix Clang/GCC × Release/TSAN-Release |
 
 ---
