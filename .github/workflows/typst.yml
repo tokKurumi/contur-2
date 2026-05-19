@@ -133,7 +133,7 @@ jobs:
           ls -lah build/typst
 
       - name: Upload reports artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.author.id }}
           path: build/typst/*.pdf
