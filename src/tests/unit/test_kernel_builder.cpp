@@ -260,6 +260,7 @@ namespace {
                                                 .withIpcManager(std::make_unique<IpcManager>())
                                                 .withSyscallTable(std::make_unique<SyscallTable>())
                                                 .withDefaultTickBudget(defaultTickBudget);
+
         return builder;
     }
 

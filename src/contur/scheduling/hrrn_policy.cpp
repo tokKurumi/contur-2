@@ -4,6 +4,7 @@
 #include "contur/scheduling/hrrn_policy.h"
 
 #include <algorithm>
+#include <cmath>
 
 #include "contur/core/clock.h"
 
@@ -32,10 +33,11 @@ namespace contur {
             return INVALID_PID;
         }
 
+        constexpr double kRatioEpsilon = 1e-9;
         auto selected = std::max_element(readyQueue.begin(), readyQueue.end(), [](const auto &a, const auto &b) {
             double lhs = responseRatio(a);
             double rhs = responseRatio(b);
-            if (lhs != rhs)
+            if (std::abs(lhs - rhs) > kRatioEpsilon)
             {
                 return lhs < rhs;
             }

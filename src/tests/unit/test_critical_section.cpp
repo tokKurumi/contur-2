@@ -9,6 +9,7 @@
 
 #include "contur/core/error.h"
 #include "contur/core/types.h"
+
 #include "contur/sync/critical_section.h"
 #include "contur/sync/i_sync_primitive.h"
 #include "contur/sync/mutex.h"

@@ -90,9 +90,9 @@ TEST(ConsoleDeviceTest, NonPrintableValueWritesAsInteger)
     CoutRedirect redirect(captured.rdbuf());
 
     ConsoleDevice device;
-    ASSERT_TRUE(device.write(31).isOk());            // below 32 (space)
-    ASSERT_TRUE(device.write(127).isOk());           // DEL
-    ASSERT_TRUE(device.write(255).isOk());           // out of ascii
+    ASSERT_TRUE(device.write(31).isOk());  // below 32 (space)
+    ASSERT_TRUE(device.write(127).isOk()); // DEL
+    ASSERT_TRUE(device.write(255).isOk()); // out of ascii
     EXPECT_NE(captured.str().find("31"), std::string::npos);
     EXPECT_NE(captured.str().find("127"), std::string::npos);
     EXPECT_NE(captured.str().find("255"), std::string::npos);
@@ -106,8 +106,8 @@ TEST(ConsoleDeviceTest, PrintableBoundariesRenderedAsCharacters)
     CoutRedirect redirect(captured.rdbuf());
 
     ConsoleDevice device;
-    ASSERT_TRUE(device.write(32).isOk());            // ' ' inclusive
-    ASSERT_TRUE(device.write(126).isOk());           // '~' inclusive
+    ASSERT_TRUE(device.write(32).isOk());  // ' ' inclusive
+    ASSERT_TRUE(device.write(126).isOk()); // '~' inclusive
     const auto output = captured.str();
     EXPECT_NE(output.find(' '), std::string::npos);
     EXPECT_NE(output.find('~'), std::string::npos);

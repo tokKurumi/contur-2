@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "contur/core/error.h"
+
 #include "contur/fs/file_descriptor.h"
 #include "contur/fs/inode.h"
 

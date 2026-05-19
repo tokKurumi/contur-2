@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "contur/core/error.h"
+
 #include "contur/io/i_device.h"
 #include "contur/io/network_device.h"
 

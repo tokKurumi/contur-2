@@ -112,11 +112,11 @@ namespace contur {
         {
             // Caller must hold mutex.
             currentJob = nextJob;
-            lanes = &nextLanes;
+            lanes = nextLanes;
             tickBudget = nextTickBudget;
-            activeWorkers = std::min(workers.size(), nextLanes.size());
+            activeWorkers = std::min(workers.size(), lanes.size());
             nextLane.store(0, std::memory_order_relaxed);
-            laneErrors.assign(nextLanes.size(), ErrorCode::NotFound);
+            laneErrors.assign(lanes.size(), ErrorCode::NotFound);
             lastTraceEvents.clear();
             lastDeterministicOrder.clear();
             // Clear per-worker trace buffers.
@@ -135,7 +135,7 @@ namespace contur {
             std::unique_lock<std::mutex> lock(mutex);
             jobDone.wait(lock, [this] { return completedWorkers == workers.size(); });
             currentJob = JobKind::None;
-            lanes = nullptr;
+            lanes.clear();
             tickBudget = 0;
             activeWorkers = 0;
             // All workers finished: merge per-worker traces into a single canonical vector.
@@ -192,7 +192,7 @@ namespace contur {
 
                     seenJobToken = jobToken;
                     job = currentJob;
-                    jobLanes = lanes;
+                    jobLanes = &lanes;
                     jobTickBudget = tickBudget;
                     workerCount = activeWorkers;
                 }
@@ -357,7 +357,7 @@ namespace contur {
         std::size_t jobToken = 0;
         std::size_t completedWorkers = 0;
         JobKind currentJob = JobKind::None;
-        const DispatcherLanes *lanes = nullptr;
+        DispatcherLanes lanes;
         std::size_t tickBudget = 0;
         std::size_t activeWorkers = 0;
 

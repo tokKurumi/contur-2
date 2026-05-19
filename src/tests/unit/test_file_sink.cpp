@@ -28,7 +28,8 @@ namespace {
 
         explicit TempFileGuard(const std::string &suffix)
         {
-            const auto stem = "contur2_file_sink_" + std::to_string(reinterpret_cast<std::uintptr_t>(this)) + "_" + suffix;
+            const auto stem =
+                "contur2_file_sink_" + std::to_string(reinterpret_cast<std::uintptr_t>(this)) + "_" + suffix;
             path = std::filesystem::temp_directory_path() / stem;
             std::error_code ec;
             std::filesystem::remove(path, ec);
@@ -152,7 +153,8 @@ TEST(FileSinkTest, UnopenableFileSilentlyDropsWrites)
 {
     // Path inside a non-existent directory will fail to open;
     // sink must not throw on construction or on write.
-    const std::filesystem::path bogus = std::filesystem::temp_directory_path() / "contur2_no_such_dir_xyzzy" / "out.log";
+    const std::filesystem::path bogus =
+        std::filesystem::temp_directory_path() / "contur2_no_such_dir_xyzzy" / "out.log";
 
     std::unique_ptr<FileSink> sink;
     EXPECT_NO_THROW(sink = std::make_unique<FileSink>(bogus.string()));
