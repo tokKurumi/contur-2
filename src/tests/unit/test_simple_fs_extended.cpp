@@ -44,9 +44,7 @@ class FsExtTest : public ::testing::Test
     SimpleFS fs{128, 64};
 };
 
-// ---------------------------------------------------------------------------
 // Descriptor lifecycle error paths
-// ---------------------------------------------------------------------------
 
 TEST_F(FsExtTest, WriteToReadOnlyDescriptorFails)
 {
@@ -104,9 +102,7 @@ TEST_F(FsExtTest, WriteAfterCloseDescriptorFails)
     EXPECT_EQ(result.errorCode(), ErrorCode::NotFound);
 }
 
-// ---------------------------------------------------------------------------
 // Directory operations
-// ---------------------------------------------------------------------------
 
 TEST_F(FsExtTest, MkdirAlreadyExistingFails)
 {
@@ -212,9 +208,7 @@ TEST_F(FsExtTest, MultipleFilesInSameDirectory)
     EXPECT_EQ(listing.value().size(), 5u);
 }
 
-// ---------------------------------------------------------------------------
 // Write / read accumulation
-// ---------------------------------------------------------------------------
 
 TEST_F(FsExtTest, MultipleWritesAccumulateInOrder)
 {
@@ -272,9 +266,7 @@ TEST_F(FsExtTest, LargeFileSpanningMultipleBlocks)
     EXPECT_GT(info.value().blockCount, 1u);
 }
 
-// ---------------------------------------------------------------------------
 // Stat edge cases
-// ---------------------------------------------------------------------------
 
 TEST_F(FsExtTest, StatOnNonExistentPathFails)
 {
@@ -304,9 +296,7 @@ TEST_F(FsExtTest, StatSizeMatchesWrittenBytes)
     EXPECT_EQ(info.value().size, 5u);
 }
 
-// ---------------------------------------------------------------------------
 // Remove edge cases
-// ---------------------------------------------------------------------------
 
 TEST_F(FsExtTest, RemoveNonExistentPathFails)
 {

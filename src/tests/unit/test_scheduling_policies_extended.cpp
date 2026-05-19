@@ -18,9 +18,7 @@
 
 using namespace contur;
 
-// ---------------------------------------------------------------------------
 // RoundRobinPolicy
-// ---------------------------------------------------------------------------
 
 TEST(RoundRobinExtTest, EmptyQueueReturnsInvalidPid)
 {
@@ -109,9 +107,7 @@ TEST(RoundRobinExtTest, PolicyName)
     EXPECT_EQ(policy.name(), "RoundRobin");
 }
 
-// ---------------------------------------------------------------------------
 // FcfsPolicy
-// ---------------------------------------------------------------------------
 
 TEST(FcfsExtTest, EmptyQueueReturnsInvalidPid)
 {
@@ -177,9 +173,7 @@ TEST(FcfsExtTest, PolicyName)
     EXPECT_EQ(policy.name(), "FCFS");
 }
 
-// ---------------------------------------------------------------------------
 // PriorityPolicy
-// ---------------------------------------------------------------------------
 
 TEST(PriorityExtTest, EmptyQueueReturnsInvalidPid)
 {
@@ -245,9 +239,7 @@ TEST(PriorityExtTest, PolicyName)
     EXPECT_EQ(policy.name(), "Priority");
 }
 
-// ---------------------------------------------------------------------------
 // SpnPolicy
-// ---------------------------------------------------------------------------
 
 TEST(SpnExtTest, EmptyQueueReturnsInvalidPid)
 {
@@ -292,9 +284,7 @@ TEST(SpnExtTest, PolicyName)
     EXPECT_EQ(policy.name(), "SPN");
 }
 
-// ---------------------------------------------------------------------------
 // SrtPolicy
-// ---------------------------------------------------------------------------
 
 TEST(SrtExtTest, EmptyQueueReturnsInvalidPid)
 {
@@ -348,9 +338,7 @@ TEST(SrtExtTest, PolicyName)
     EXPECT_EQ(policy.name(), "SRT");
 }
 
-// ---------------------------------------------------------------------------
 // HrrnPolicy
-// ---------------------------------------------------------------------------
 
 TEST(HrrnExtTest, EmptyQueueReturnsInvalidPid)
 {
@@ -399,9 +387,7 @@ TEST(HrrnExtTest, PolicyName)
     EXPECT_EQ(policy.name(), "HRRN");
 }
 
-// ---------------------------------------------------------------------------
 // MlfqPolicy
-// ---------------------------------------------------------------------------
 
 TEST(MlfqExtTest, EmptyQueueReturnsInvalidPid)
 {

@@ -104,9 +104,7 @@ namespace {
 
 } // namespace
 
-// ---------------------------------------------------------------------------
 // Round Robin
-// ---------------------------------------------------------------------------
 
 TEST(SchedulingIntTest, RoundRobinThreeProcessesAllComplete)
 {
@@ -153,9 +151,7 @@ TEST(SchedulingIntTest, RoundRobinLargeBatchCompletes)
     EXPECT_EQ(kernel->processCount(), 0u);
 }
 
-// ---------------------------------------------------------------------------
 // FCFS
-// ---------------------------------------------------------------------------
 
 TEST(SchedulingIntTest, FcfsThreeProcessesAllComplete)
 {
@@ -182,9 +178,7 @@ TEST(SchedulingIntTest, FcfsSingleProcessCompletes)
     EXPECT_EQ(kernel->processCount(), 0u);
 }
 
-// ---------------------------------------------------------------------------
 // Priority
-// ---------------------------------------------------------------------------
 
 TEST(SchedulingIntTest, PriorityAllPrioritiesCompleteEventually)
 {
@@ -221,9 +215,7 @@ TEST(SchedulingIntTest, PriorityRealtimeCompletesBeforeIdleIsHalfDone)
     EXPECT_GT(kernel->processCount(), 0u);
 }
 
-// ---------------------------------------------------------------------------
 // Mixed: process creation / termination interleaved with scheduling
-// ---------------------------------------------------------------------------
 
 TEST(SchedulingIntTest, CreateProcessDuringRuntime)
 {

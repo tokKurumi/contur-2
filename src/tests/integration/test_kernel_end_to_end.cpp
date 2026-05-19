@@ -120,9 +120,7 @@ namespace {
 
 } // namespace
 
-// ---------------------------------------------------------------------------
 // Basic process lifecycle
-// ---------------------------------------------------------------------------
 
 TEST(KernelE2ETest, SingleProcessRunsToCompletion)
 {
@@ -174,9 +172,7 @@ TEST(KernelE2ETest, ProcessWithArithmeticInstructionsCompletesCleanly)
     EXPECT_EQ(kernel->processCount(), 0u);
 }
 
-// ---------------------------------------------------------------------------
 // Tick counter
-// ---------------------------------------------------------------------------
 
 TEST(KernelE2ETest, TickCounterAdvancesWithEachDispatch)
 {
@@ -211,9 +207,7 @@ TEST(KernelE2ETest, SnapshotTickAdvancesAfterTick)
     EXPECT_GT(after, before);
 }
 
-// ---------------------------------------------------------------------------
 // Snapshot accuracy
-// ---------------------------------------------------------------------------
 
 TEST(KernelE2ETest, SnapshotProcessCountMatchesLiveProcesses)
 {
@@ -260,9 +254,7 @@ TEST(KernelE2ETest, SnapshotPolicyNameReflectsScheduler)
     EXPECT_EQ(kernel->snapshot().policyName, "RoundRobin");
 }
 
-// ---------------------------------------------------------------------------
 // Scheduling policy integration
-// ---------------------------------------------------------------------------
 
 TEST(KernelE2ETest, FcfsTwoProcessesBothComplete)
 {
@@ -297,9 +289,7 @@ TEST(KernelE2ETest, PriorityPolicyRealtimeFinishesBeforeIdleProcess)
     EXPECT_GT(kernel->processCount(), 0u);
 }
 
-// ---------------------------------------------------------------------------
 // Syscall dispatch
-// ---------------------------------------------------------------------------
 
 TEST(KernelE2ETest, RegisteredSyscallHandlerIsCallable)
 {
@@ -371,9 +361,7 @@ TEST(KernelE2ETest, SyscallHandlerArgsForwardedCorrectly)
     EXPECT_EQ(received, args);
 }
 
-// ---------------------------------------------------------------------------
 // Memory management
-// ---------------------------------------------------------------------------
 
 TEST(KernelE2ETest, VirtualMemorySlotsFreedAfterProcessTerminates)
 {
@@ -407,9 +395,7 @@ TEST(KernelE2ETest, ManualTerminateDecreasesProcessCount)
     EXPECT_FALSE(kernel->hasProcess(pid));
 }
 
-// ---------------------------------------------------------------------------
 // runForTicks semantics (regression for Bug 2 anyWorkDone fix)
-// ---------------------------------------------------------------------------
 
 TEST(KernelE2ETest, RunForTicksReturnsNotFoundOnEmptyKernel)
 {

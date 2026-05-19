@@ -33,9 +33,7 @@ namespace {
 
 } // namespace
 
-// ---------------------------------------------------------------------------
 // Empty-queue behaviour
-// ---------------------------------------------------------------------------
 
 TEST(SchedulerExtTest, SelectNextFromEmptyQueueReturnsError)
 {
@@ -44,9 +42,7 @@ TEST(SchedulerExtTest, SelectNextFromEmptyQueueReturnsError)
     ASSERT_TRUE(result.isError());
 }
 
-// ---------------------------------------------------------------------------
 // Multi-process ready queue
-// ---------------------------------------------------------------------------
 
 TEST(SchedulerExtTest, MultipleEnqueuesAllAppearInSnapshot)
 {
@@ -112,9 +108,7 @@ TEST(SchedulerExtTest, FcfsSelectsThreeProcessesInArrivalOrder)
     EXPECT_EQ(sel3.value(), 3u);
 }
 
-// ---------------------------------------------------------------------------
 // Blocked queue
-// ---------------------------------------------------------------------------
 
 TEST(SchedulerExtTest, BlockedQueueSnapshotAfterBlockRunning)
 {
@@ -174,9 +168,7 @@ TEST(SchedulerExtTest, UnblockNonExistentPidReturnsError)
     ASSERT_TRUE(f.scheduler.unblock(999, 5).isError());
 }
 
-// ---------------------------------------------------------------------------
 // Termination edge cases
-// ---------------------------------------------------------------------------
 
 TEST(SchedulerExtTest, TerminateUnknownPidReturnsError)
 {
@@ -213,9 +205,7 @@ TEST(SchedulerExtTest, TerminateRunningProcessClearsRunningList)
     EXPECT_TRUE(f.scheduler.getQueueSnapshot().empty());
 }
 
-// ---------------------------------------------------------------------------
 // Policy replacement
-// ---------------------------------------------------------------------------
 
 TEST(SchedulerExtTest, SetPolicyChangesPolicyName)
 {
@@ -234,9 +224,7 @@ TEST(SchedulerExtTest, SetPolicyRejectsNullptr)
     EXPECT_EQ(result.errorCode(), ErrorCode::InvalidState);
 }
 
-// ---------------------------------------------------------------------------
 // Lane management
-// ---------------------------------------------------------------------------
 
 TEST(SchedulerExtTest, ConfigureLanesZeroIsInvalidArgument)
 {

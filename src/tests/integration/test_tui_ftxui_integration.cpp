@@ -120,9 +120,7 @@ class FtxuiIntegrationTest : public ::testing::Test
     std::unique_ptr<FtxuiRenderer> renderer_;
 };
 
-// ---------------------------------------------------------------------------
 // Stack wiring
-// ---------------------------------------------------------------------------
 
 TEST_F(FtxuiIntegrationTest, ControllerStartsWithInitialSnapshot)
 {

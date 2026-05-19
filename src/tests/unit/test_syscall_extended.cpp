@@ -25,9 +25,7 @@ namespace {
 
 } // namespace
 
-// ---------------------------------------------------------------------------
 // Error propagation
-// ---------------------------------------------------------------------------
 
 TEST(SyscallExtTest, DispatchPropagatesHandlerError)
 {
@@ -58,9 +56,7 @@ TEST(SyscallExtTest, DispatchUnregisteredIdReturnsNotFound)
     EXPECT_EQ(result.errorCode(), ErrorCode::NotFound);
 }
 
-// ---------------------------------------------------------------------------
 // Multiple handlers
-// ---------------------------------------------------------------------------
 
 TEST(SyscallExtTest, RegisterMultipleHandlersAllDispatchable)
 {
@@ -129,9 +125,7 @@ TEST(SyscallExtTest, HasHandlerReturnsFalseBeforeRegistration)
     EXPECT_EQ(table.handlerCount(), 0u);
 }
 
-// ---------------------------------------------------------------------------
 // Argument forwarding
-// ---------------------------------------------------------------------------
 
 TEST(SyscallExtTest, HandlerReceivesAllArgsAndCallerPid)
 {
@@ -153,7 +147,7 @@ TEST(SyscallExtTest, HandlerReceivesAllArgsAndCallerPid)
                     .isOk());
 
     const std::vector<RegisterValue> testArgs = {10, 20, 30, 40};
-    auto result = table.dispatch(SyscallId::Write, testArgs, caller);
+    auto result = table.dispatch(SyscallId::Write, std::span<const RegisterValue>(testArgs.data(), testArgs.size()), caller);
 
     ASSERT_TRUE(result.isOk());
     EXPECT_EQ(result.value(), static_cast<RegisterValue>(testArgs.size()));
@@ -182,9 +176,7 @@ TEST(SyscallExtTest, EmptyArgsForwardedCorrectly)
     EXPECT_EQ(argCount, 0u);
 }
 
-// ---------------------------------------------------------------------------
 // Common syscall ids usable end-to-end
-// ---------------------------------------------------------------------------
 
 TEST(SyscallExtTest, GetPidHandlerReturnsCaller)
 {
