@@ -13,29 +13,25 @@
   designation: designation,
 )
 
-= Цель работы
+= Охват этапов
 
-Построить замкнутый вычислительный контур симулятора Contur 2: арифметико-логическое
-устройство, центральный процессор с циклом выборки/декодирования/исполнения, абстракцию
-устройства ввода-вывода и движок интерпретации, обёрнутый за единый контракт
-`IExecutionEngine`. Тот же контракт используется альтернативной реализацией — движком
-нативного исполнения.
+- Этап 4: CPU + I/O
+- Этап 5: Interpreter Engine
 
-Задачи работы:
+== Контекст и цель
 
-+ реализовать чистое ALU с возвратом ошибок через `Result<RegisterValue>`;
-+ реализовать `Cpu` с поддержкой полного набора инструкций ISA проекта;
-+ описать контракт `IDevice` и реализовать `ConsoleDevice` / `NetworkDevice`;
-+ реализовать реестр устройств `DeviceManager` со строгой диспетчеризацией по `DeviceId`;
-+ описать контракт `IExecutionEngine` и реализовать `InterpreterEngine` с тик-бюджетом.
+После того как сформированы базовые типы, память и модель процесса, проект получает
+вычислительный контур — слой, который превращает байт-код процесса в наблюдаемое поведение.
+Этот отчёт фиксирует, как устроены ALU и CPU, как организован цикл выборки, декодирования и исполнения,
+как I/O-устройства подключаются к CPU и как `InterpreterEngine` инкапсулирует этот цикл за
+единым строгим контрактом `IExecutionEngine`. Тот же контракт используется и нативным
+движком исполнения (см. отчёт 8).
 
 = Реализация
 
-== Арифметико-логическое устройство
+== ALU как чистая вычислительная функция
 
-`ALU` спроектирован как чистая (без состояния) функциональная единица: на вход — пара
-регистровых значений, на выход — результат, обёрнутый в `Result<RegisterValue>`. Деление на
-ноль не выбрасывает исключение, а возвращает `ErrorCode::DivisionByZero`:
+`ALU` намеренно не хранит состояние: он принимает на вход значения регистров и возвращает `Result<RegisterValue>`. Деление на ноль не выбрасывает исключение — оно явно возвращается вызывающему через `ErrorCode::DivisionByZero`. Такое решение поддерживает архитектурный принцип «никаких исключений в runtime-горячих путях», заложенный в фундаменте проекта.
 
 ```cpp
 class ALU {
@@ -58,18 +54,17 @@ class ALU {
 };
 ```
 
-Метод `compare` возвращает битовую маску флагов (нулевой и знаковый), что соответствует
-регистру флагов в реальных архитектурах и упрощает реализацию условных переходов.
+Метод `compare` намеренно возвращает не пару `bool`, а битовую маску флагов (`ZERO_FLAG`/`SIGN_FLAG`), что соответствует поведению регистра флагов в реальных архитектурах и упрощает реализацию инструкций условного перехода (`JumpEqual`, `JumpLess`, и т. д.).
 
-== Центральный процессор
+== CPU и цикл fetch–decode–execute
 
 `Cpu` хранит ссылку на `IMemory`, владеет ALU и регистром флагов сравнения. Метод
-`step(RegisterFile &regs)` выполняет один цикл выборки/декодирования/исполнения над
+`step(RegisterFile &regs)` выполняет один цикл выборки, декодирования и исполнения над
 переданным регистровым файлом и возвращает `Interrupt` — причину остановки текущего шага
 (штатное продолжение, программное прерывание, ошибка). Каждая инструкция кодируется
-структурой `Block` с полями `code`, `reg`, `operand`, `state` (последний задаёт режим
-адресации: 0 — immediate, 1 — register-register). Последовательность операций показана на
-рисунке @fig:cpu-cycle.
+структурой `Block` с полями `code`, `reg`, `operand`, `state`.
+
+Последовательность операций показана на рисунке @fig:cpu-cycle.
 
 #figure(
   diagram(
@@ -78,19 +73,19 @@ class ALU {
     node((0, 0), [InterpreterEngine.execute(...)], fill: rgb("#dae8fc")),
     node((0, 1), [Cpu.step(regs)], fill: rgb("#d5e8d4")),
     node((1, 1), [IMemory.read(PC)], fill: rgb("#ffe6cc")),
-    node((0, 2), [decode Block], fill: rgb("#fff2cc")),
-    node((0, 3), [ALU / control / I/O], fill: rgb("#e1d5e7")),
-    node((0, 4), [update RegisterFile/PC/flags], fill: rgb("#f8cecc")),
-    node((0, 5), [return Interrupt], fill: rgb("#d5e8d4")),
+    node((0, 2), [декодирование Block], fill: rgb("#fff2cc")),
+    node((0, 3), [операции ALU / управление / ввод-вывод], fill: rgb("#e1d5e7")),
+    node((0, 4), [обновление RegisterFile / PC / флагов], fill: rgb("#f8cecc")),
+    node((0, 5), [возврат Interrupt], fill: rgb("#d5e8d4")),
     edge((0, 0), (0, 1), "->"),
-    edge((0, 1), (1, 1), "->", [fetch]),
+    edge((0, 1), (1, 1), "->", [выборка]),
     edge((1, 1), (0, 2), "->", [Block], label-side: right),
-    edge((0, 2), (0, 3), "->", [execute]),
-    edge((0, 3), (0, 4), "->", [writeback]),
+    edge((0, 2), (0, 3), "->", [исполнение]),
+    edge((0, 3), (0, 4), "->", [запись результата]),
     edge((0, 4), (0, 5), "->"),
-    edge((0, 5), (0, 0), "-->", [next iteration], bend: 60deg, label-side: left),
+    edge((0, 5), (0, 0), "-->", [следующая итерация], bend: 60deg, label-side: left),
   ),
-  caption: [Цикл выборки--декодирования--исполнения одной инструкции],
+  caption: [Цикл выборки, декодирования и исполнения одной инструкции],
 ) <fig:cpu-cycle>
 
 Возвращаемое значение `Interrupt` принимает значения `Ok`, `Exit`, `DivByZero`, `Error`,
@@ -117,9 +112,9 @@ CPU и движках исполнения. Связи компонентов п
     node((1, 1), [DeviceManager], fill: rgb("#d5e8d4")),
     node((2, 0), [ConsoleDevice], fill: rgb("#ffe6cc")),
     node((2, 2), [NetworkDevice], fill: rgb("#ffe6cc")),
-    edge((0, 1), (1, 1), "->", [read/write(DeviceId)], label-side: left, label-sep: 0.9em),
-    edge((1, 1), (2, 0), "-->", [dispatch], label-side: left),
-    edge((1, 1), (2, 2), "-->", [dispatch], label-side: right),
+    edge((0, 1), (1, 1), "->", [чтение/запись(DeviceId)], label-side: left, label-sep: 0.9em),
+    edge((1, 1), (2, 0), "-->", [диспетчеризация], label-side: left),
+    edge((1, 1), (2, 2), "-->", [диспетчеризация], label-side: right),
   ),
   caption: [Подключение CPU и устройств через DeviceManager],
 ) <fig:devices>
@@ -145,31 +140,16 @@ class IExecutionEngine {
 (`budgetExhausted`, `exited`, `error`, `interrupted`, `halted`), что исключает
 несогласованные комбинации полей.
 
-= Заключение
+= Заключение <s>
 
 Вычислительный контур симулятора замкнут на чистом ALU, явных регистрах и небоксируемых
-прерываниях. Цикл выборки--декодирования--исполнения CPU прозрачен и тестируется покомандно.
+прерываниях. Цикл выборки, декодирования и исполнения CPU прозрачен и тестируется покомандно.
 Устройства подключаются как сменяемые стратегии. Контракт `IExecutionEngine` стандартизирует
-запуск процессов независимо от их реализации (байт-код или нативный host-процесс), что
-обеспечивает встройку второго движка исполнения без изменений в ядре, диспетчере и
-планировщике.
+запуск процессов независимо от их реализации, байт-кодной или нативной, что обеспечивает
+встройку второго движка исполнения без изменений в ядре, диспетчере и планировщике.
 
-= Список использованных источников
-
-+ `src/include/contur/cpu/alu.h`
-+ `src/contur/cpu/alu.cpp`
-+ `src/include/contur/cpu/i_cpu.h`
-+ `src/include/contur/cpu/cpu.h`
-+ `src/contur/cpu/cpu.cpp`
-+ `src/include/contur/arch/instruction.h`
-+ `src/include/contur/arch/interrupt.h`
-+ `src/include/contur/arch/register_file.h`
-+ `src/include/contur/io/i_device.h`
-+ `src/include/contur/io/console_device.h`
-+ `src/include/contur/io/network_device.h`
-+ `src/include/contur/io/device_manager.h`
-+ `src/contur/io/device_manager.cpp`
-+ `src/include/contur/execution/i_execution_engine.h`
-+ `src/include/contur/execution/execution_context.h`
-+ `src/include/contur/execution/interpreter_engine.h`
-+ `src/contur/execution/interpreter_engine.cpp`
+- Описана семантика `Block`-инструкции и связь полей с ISA.
+- Показана связка ALU/CPU/IMemory без скрытых глобальных состояний.
+- Перечислены и объяснены значения `Interrupt` и `StopReason`.
+- Описан контракт `IExecutionEngine` и то, что `InterpreterEngine` — лишь одна из стратегий.
+- Указано, как `DeviceManager` обеспечивает единый путь к разнотипным устройствам.
