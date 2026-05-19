@@ -16,6 +16,8 @@
 #include "contur/execution/i_execution_engine.h"
 #include "contur/execution/interpreter_engine.h"
 #include "contur/fs/simple_fs.h"
+#include "contur/io/device_manager.h"
+#include "contur/io/io_manager.h"
 #include "contur/ipc/ipc_manager.h"
 #include "contur/kernel/i_kernel.h"
 #include "contur/kernel/kernel_builder.h"
@@ -159,6 +161,10 @@ namespace {
         auto mmu = std::make_unique<Mmu>(*memory, std::make_unique<FifoReplacement>(), *tracer);
         auto virtualMemory = std::make_unique<VirtualMemory>(*mmu, MAX_PROCESSES);
         auto cpu = std::make_unique<Cpu>(*memory);
+        auto syscallTable = std::make_unique<SyscallTable>();
+        auto fileSystem = std::make_unique<SimpleFS>();
+        auto deviceManager = std::make_unique<DeviceManager>();
+        auto ioManager = std::make_unique<IoManager>(*fileSystem, *deviceManager);
 
         if (!executionEngine)
         {
@@ -173,7 +179,9 @@ namespace {
         auto scheduler = std::make_unique<Scheduler>(std::move(schedulingPolicy), *tracer);
         if (!dispatcher)
         {
-            dispatcher = std::make_unique<Dispatcher>(*scheduler, *executionEngine, *virtualMemory, *clock, *tracer);
+            dispatcher = std::make_unique<Dispatcher>(
+                *scheduler, *executionEngine, *virtualMemory, *clock, *tracer, *syscallTable
+            );
         }
 
         return KernelBuilder()
@@ -186,9 +194,11 @@ namespace {
             .withScheduler(std::move(scheduler))
             .withDispatcher(std::move(dispatcher))
             .withTracer(std::move(tracer))
-            .withFileSystem(std::make_unique<SimpleFS>())
+            .withFileSystem(std::move(fileSystem))
+            .withDeviceManager(std::move(deviceManager))
+            .withIoManager(std::move(ioManager))
             .withIpcManager(std::make_unique<IpcManager>())
-            .withSyscallTable(std::make_unique<SyscallTable>())
+            .withSyscallTable(std::move(syscallTable))
             .withDefaultTickBudget(defaultTickBudget)
             .build();
     }

@@ -15,6 +15,8 @@
 #include "contur/dispatch/dispatcher.h"
 #include "contur/execution/interpreter_engine.h"
 #include "contur/fs/simple_fs.h"
+#include "contur/io/device_manager.h"
+#include "contur/io/io_manager.h"
 #include "contur/ipc/ipc_manager.h"
 #include "contur/kernel/i_kernel.h"
 #include "contur/kernel/kernel_builder.h"
@@ -44,7 +46,12 @@ namespace {
         auto cpu = std::make_unique<Cpu>(*memory);
         auto engine = std::make_unique<InterpreterEngine>(*cpu, *memory);
         auto scheduler = std::make_unique<Scheduler>(std::move(policy), *tracer);
-        auto dispatcher = std::make_unique<Dispatcher>(*scheduler, *engine, *virtualMem, *clock, *tracer);
+        auto syscallTable = std::make_unique<SyscallTable>();
+        auto dispatcher =
+            std::make_unique<Dispatcher>(*scheduler, *engine, *virtualMem, *clock, *tracer, *syscallTable);
+        auto fileSystem = std::make_unique<SimpleFS>();
+        auto deviceManager = std::make_unique<DeviceManager>();
+        auto ioManager = std::make_unique<IoManager>(*fileSystem, *deviceManager);
 
         return KernelBuilder{}
             .withClock(std::move(clock))
@@ -56,9 +63,11 @@ namespace {
             .withScheduler(std::move(scheduler))
             .withDispatcher(std::move(dispatcher))
             .withTracer(std::move(tracer))
-            .withFileSystem(std::make_unique<SimpleFS>())
+            .withFileSystem(std::move(fileSystem))
+            .withDeviceManager(std::move(deviceManager))
+            .withIoManager(std::move(ioManager))
             .withIpcManager(std::make_unique<IpcManager>())
-            .withSyscallTable(std::make_unique<SyscallTable>())
+            .withSyscallTable(std::move(syscallTable))
             .withDefaultTickBudget(tickBudget)
             .build();
     }

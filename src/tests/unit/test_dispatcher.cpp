@@ -22,6 +22,7 @@
 #include "contur/scheduling/fcfs_policy.h"
 #include "contur/scheduling/i_scheduling_policy.h"
 #include "contur/scheduling/scheduler.h"
+#include "contur/syscall/syscall_table.h"
 #include "contur/tracing/null_tracer.h"
 
 using namespace contur;
@@ -131,7 +132,8 @@ class DispatcherTest : public ::testing::Test
     VirtualMemory virtualMemory_{mmu_, 16};
     Scheduler scheduler_{std::make_unique<FcfsPolicy>(), tracer_};
     FakeExecutionEngine engine_;
-    Dispatcher dispatcher_{scheduler_, engine_, virtualMemory_, clock_, tracer_};
+    SyscallTable syscallTable_;
+    Dispatcher dispatcher_{scheduler_, engine_, virtualMemory_, clock_, tracer_, syscallTable_};
 };
 
 TEST_F(DispatcherTest, CreateProcessRejectsNull)
@@ -199,8 +201,10 @@ TEST_F(DispatcherTest, DispatchBudgetExhaustedKeepsProcessAlive)
 
 TEST_F(DispatcherTest, DispatchInterruptedMovesRunningToBlocked)
 {
+    // DeviceIO interrupt unconditionally blocks the process (unlike SystemCall
+    // which only blocks on ResourceBusy from the syscall handler).
     ASSERT_TRUE(dispatcher_.createProcess(makeProcess(2), clock_.now()).isOk());
-    engine_.setDefaultResult(ExecutionResult::interrupted(2, 1, Interrupt::SystemCall));
+    engine_.setDefaultResult(ExecutionResult::interrupted(2, 1, Interrupt::DeviceIO));
 
     auto result = dispatcher_.dispatch(5);
 

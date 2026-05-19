@@ -19,6 +19,8 @@
 #include "contur/dispatch/dispatcher.h"
 #include "contur/execution/interpreter_engine.h"
 #include "contur/fs/simple_fs.h"
+#include "contur/io/device_manager.h"
+#include "contur/io/io_manager.h"
 #include "contur/ipc/ipc_manager.h"
 #include "contur/kernel/i_kernel.h"
 #include "contur/kernel/kernel_builder.h"
@@ -53,10 +55,13 @@ class FtxuiIntegrationTest : public ::testing::Test
         auto engine = std::make_unique<InterpreterEngine>(*cpu, *memory);
         auto policy = std::make_unique<RoundRobinPolicy>(4);
         auto scheduler = std::make_unique<Scheduler>(std::move(policy), *tracer);
-        auto dispatcher = std::make_unique<Dispatcher>(*scheduler, *engine, *virtualMem, *clock, *tracer);
-        auto fs = std::make_unique<SimpleFS>(64);
-        auto ipc = std::make_unique<IpcManager>();
         auto syscallTable = std::make_unique<SyscallTable>();
+        auto dispatcher =
+            std::make_unique<Dispatcher>(*scheduler, *engine, *virtualMem, *clock, *tracer, *syscallTable);
+        auto fs = std::make_unique<SimpleFS>(64);
+        auto deviceManager = std::make_unique<DeviceManager>();
+        auto ioManager = std::make_unique<IoManager>(*fs, *deviceManager);
+        auto ipc = std::make_unique<IpcManager>();
 
         auto result = KernelBuilder{}
                           .withClock(std::move(clock))
@@ -69,6 +74,8 @@ class FtxuiIntegrationTest : public ::testing::Test
                           .withDispatcher(std::move(dispatcher))
                           .withTracer(std::move(tracer))
                           .withFileSystem(std::move(fs))
+                          .withDeviceManager(std::move(deviceManager))
+                          .withIoManager(std::move(ioManager))
                           .withIpcManager(std::move(ipc))
                           .withSyscallTable(std::move(syscallTable))
                           .withDefaultTickBudget(4)
