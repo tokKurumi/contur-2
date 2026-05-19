@@ -61,11 +61,11 @@ jobs:
         with:
           typst-version: 0.14.0
 
-      - name: Install smk-sto template package from source
+      - name: Install smk-sto template package v0.3.1
         env:
           SMK_STO_REPO: https://github.com/tokKurumi/smk-sto.git
           # Pin to a tag, branch, or SHA for reproducibility. Empty = default branch.
-          SMK_STO_REF: ""
+          SMK_STO_REF: "v0.3.1"
         run: |
           set -euo pipefail
           src=$(mktemp -d)
