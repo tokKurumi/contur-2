@@ -190,26 +190,10 @@ stdout дочернего процесса дренируется в трасс�
 цель `docs` и публикует артефакт через `actions/upload-pages-artifact` +
 `actions/deploy-pages`.
 
-= Заключение
+= Заключение <s>
 
 Исполнительный контур симулятора замкнут: ядро одинаково честно работает и со своим
 байт-кодом, и с настоящим host-процессом. Тесты покрывают unit-сценарии, сквозные сценарии
 через `IKernel` и многопоточные/детерминированные режимы; CI прогоняет Release-сборки на
 Clang и GCC, в том числе под ThreadSanitizer. Doxygen-документация автоматически
 публикуется на GitHub Pages, что делает API-доку доступной без локальной сборки.
-
-= Список использованных источников
-
-+ `src/include/contur/execution/native_engine.h`
-+ `src/contur/execution/native_engine.cpp`
-+ `src/include/contur/kernel/i_kernel.h`
-+ `src/include/contur/process/process_image.h`
-+ `src/contur/process/process_image.cpp`
-+ `src/tests/unit/test_native_engine.cpp`
-+ `src/tests/integration/test_native_kernel_flow.cpp`
-+ `src/CMakePresets.json`
-+ `src/CMakeLists.txt`
-+ `.github/workflows/ci.yml`
-+ `.github/workflows/docs.yml`
-+ `src/docs/doxygen/Doxyfile.in`
-+ `.github/IMPLEMENTATION_PLAN.md`

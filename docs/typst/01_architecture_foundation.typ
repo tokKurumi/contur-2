@@ -181,7 +181,7 @@ template <typename... Args> class Event {
 Эта примитивная шина далее используется для развязки ядра, статистики и трассировщика —
 наблюдатель подписывается на событие, не создавая жёсткой зависимости с источником.
 
-= Заключение
+= Заключение <s>
 
 Архитектурный фундамент Contur 2 содержит воспроизводимую сборку, единые доменные типы,
 предсказуемую модель ошибок без исключений, интерфейсные контракты с PIMPL-реализациями и
@@ -189,17 +189,3 @@ template <typename... Args> class Event {
 зависит от UI, что подтверждает архитектурную инварианту проекта. Перечисленные решения
 формируют основу, поверх которой строятся подсистемы памяти, процессов и ядра, описанные в
 последующих отчётах.
-
-= Список использованных источников
-
-+ `src/CMakeLists.txt`
-+ `src/CMakePresets.json`
-+ `src/build.sh`
-+ `src/include/contur/core/types.h`
-+ `src/include/contur/core/error.h`
-+ `src/include/contur/core/clock.h`
-+ `src/include/contur/core/event.h`
-+ `src/include/contur/arch/instruction.h`
-+ `src/include/contur/arch/register_file.h`
-+ `src/include/contur/arch/block.h`
-+ `src/include/contur/arch/interrupt.h`

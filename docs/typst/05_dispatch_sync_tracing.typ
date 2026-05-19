@@ -181,7 +181,7 @@ RAII-обёртка:
   caption: [Компоненты подсистемы трассировки и их связь],
 ) <fig:tracer>
 
-= Заключение
+= Заключение <s>
 
 Диспетчер, синхронизация и трассировка образуют управляющий и наблюдательный слой ядра.
 Диспетчер и рантайм разнесены по разным контрактам, благодаря чему режимы `N = 1` и `N > 1`
@@ -190,31 +190,3 @@ RAII-обёртка:
 устроена как нулевая стоимость по умолчанию и многоступенчатый Observer при включённом
 флаге, что позволяет TUI визуализировать ядро в реальном времени без модификаций самих
 подсистем.
-
-= Список использованных источников
-
-+ `src/include/contur/dispatch/i_dispatcher.h`
-+ `src/include/contur/dispatch/dispatcher.h`
-+ `src/contur/dispatch/dispatcher.cpp`
-+ `src/include/contur/dispatch/mp_dispatcher.h`
-+ `src/contur/dispatch/mp_dispatcher.cpp`
-+ `src/include/contur/dispatch/i_dispatch_runtime.h`
-+ `src/include/contur/dispatch/serial_dispatch_runtime.h`
-+ `src/contur/dispatch/serial_dispatch_runtime.cpp`
-+ `src/include/contur/dispatch/dispatcher_pool.h`
-+ `src/contur/dispatch/dispatcher_pool.cpp`
-+ `src/include/contur/dispatch/threading_config.h`
-+ `src/include/contur/sync/i_sync_primitive.h`
-+ `src/include/contur/sync/mutex.h`
-+ `src/include/contur/sync/semaphore.h`
-+ `src/include/contur/sync/critical_section.h`
-+ `src/include/contur/sync/deadlock_detector.h`
-+ `src/contur/sync/deadlock_detector.cpp`
-+ `src/include/contur/tracing/i_tracer.h`
-+ `src/include/contur/tracing/tracer.h`
-+ `src/include/contur/tracing/null_tracer.h`
-+ `src/include/contur/tracing/trace_scope.h`
-+ `src/include/contur/tracing/trace_event.h`
-+ `src/include/contur/tracing/console_sink.h`
-+ `src/include/contur/tracing/file_sink.h`
-+ `src/include/contur/tracing/buffer_sink.h`

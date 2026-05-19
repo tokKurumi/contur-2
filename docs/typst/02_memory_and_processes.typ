@@ -201,33 +201,10 @@ struct ProcessImage::Impl {
 Таким образом одна сущность инкапсулирует всё необходимое для диспетчеризации, исполнения и
 сохранения контекста при переключении процессов.
 
-= Заключение
+= Заключение <s>
 
 Подсистема памяти разделена на три уровня — линейная память, MMU с таблицей страниц и
 управление виртуальными слотами процесса; четыре стратегии замещения подключаются по
 единому контракту. Модель процесса представлена связкой `PCB` + `ProcessImage` с валидацией
 переходов и накоплением таймингов. На полученных интерфейсах строится исполнительная часть
 ядра, рассмотренная в следующем отчёте.
-
-= Список использованных источников
-
-+ `src/include/contur/memory/i_memory.h`
-+ `src/include/contur/memory/i_mmu.h`
-+ `src/include/contur/memory/page_table.h`
-+ `src/contur/memory/page_table.cpp`
-+ `src/include/contur/memory/mmu.h`
-+ `src/contur/memory/mmu.cpp`
-+ `src/include/contur/memory/i_virtual_memory.h`
-+ `src/include/contur/memory/virtual_memory.h`
-+ `src/contur/memory/virtual_memory.cpp`
-+ `src/include/contur/memory/i_page_replacement.h`
-+ `src/include/contur/memory/fifo_replacement.h`
-+ `src/include/contur/memory/lru_replacement.h`
-+ `src/include/contur/memory/clock_replacement.h`
-+ `src/include/contur/memory/optimal_replacement.h`
-+ `src/include/contur/process/state.h`
-+ `src/include/contur/process/priority.h`
-+ `src/include/contur/process/pcb.h`
-+ `src/contur/process/pcb.cpp`
-+ `src/include/contur/process/process_image.h`
-+ `src/contur/process/process_image.cpp`

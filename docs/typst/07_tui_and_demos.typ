@@ -190,36 +190,10 @@ class TuiController final : public ITuiController {
 приложение `contur2` линкуется только через `contur2_tui` и `contur2_demos`. Это позволяет
 запускать ядро headless (тесты, CI, нативное исполнение) без FTXUI в build-графе.
 
-= Заключение
+= Заключение <s>
 
 UI-слой представлен как полноценное FTXUI-приложение поверх MVC-контрактов. Снимки ядра
 передаются через адаптеры, история живёт только в UI, а ядро остаётся headless и
 независимым. Пользователь может ставить симуляцию на паузу, делать одиночные тики,
 seek-ать по истории и наблюдать живой поток событий трассировщика, не зная о внутреннем
 устройстве ядра.
-
-= Список использованных источников
-
-+ `src/include/contur/tui/tui_models.h`
-+ `src/include/contur/tui/tui_commands.h`
-+ `src/include/contur/kernel/i_kernel_diagnostics.h`
-+ `src/include/contur/kernel/kernel_diagnostics.h`
-+ `src/contur/kernel/kernel_diagnostics.cpp`
-+ `src/include/contur/tui/i_kernel_read_model.h`
-+ `src/contur/tui/kernel_read_model.cpp`
-+ `src/include/contur/tui/history_buffer.h`
-+ `src/contur/tui/history_buffer.cpp`
-+ `src/include/contur/tui/i_tui_controller.h`
-+ `src/contur/tui/tui_controller.cpp`
-+ `src/include/contur/tui/i_renderer.h`
-+ `src/include/contur/tui/process_view.h`
-+ `src/include/contur/tui/scheduler_view.h`
-+ `src/include/contur/tui/memory_map_view.h`
-+ `src/include/contur/tui/dashboard.h`
-+ `src/include/contur/tui/ftxui_renderer.h`
-+ `src/contur/tui/ftxui_renderer.cpp`
-+ `src/include/contur/tui/ftxui_app.h`
-+ `src/contur/tui/ftxui_app.cpp`
-+ `src/app/main.cpp`
-+ `src/app/CMakeLists.txt`
-+ `src/CMakeLists.txt`

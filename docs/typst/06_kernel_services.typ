@@ -179,35 +179,10 @@ syscall-слой. Взаимодействие двух процессов че�
   caption: [Композиция ядра через `KernelBuilder`],
 ) <fig:kernel-builder>
 
-= Заключение
+= Заключение <s>
 
 IPC, системные вызовы, файловая система и фасад `IKernel` собирают набор подсистем в
 полноценное «ядро операционной системы» с предсказуемым DI-входом и наблюдаемым снимком
 состояния. Любая подсистема подменяется для тестов или специальных сценариев без правок в
 самом ядре, что обеспечивает работу TUI, нативного исполнения и многопроцессорного рантайма
 поверх одного и того же ядра.
-
-= Список использованных источников
-
-+ `src/include/contur/ipc/i_ipc_channel.h`
-+ `src/include/contur/ipc/pipe.h`
-+ `src/include/contur/ipc/shared_memory.h`
-+ `src/include/contur/ipc/message_queue.h`
-+ `src/include/contur/ipc/ipc_manager.h`
-+ `src/contur/ipc/ipc_manager.cpp`
-+ `src/include/contur/syscall/syscall_ids.h`
-+ `src/include/contur/syscall/syscall_handler.h`
-+ `src/include/contur/syscall/syscall_table.h`
-+ `src/contur/syscall/syscall_table.cpp`
-+ `src/include/contur/fs/inode.h`
-+ `src/include/contur/fs/directory_entry.h`
-+ `src/include/contur/fs/block_allocator.h`
-+ `src/include/contur/fs/file_descriptor.h`
-+ `src/include/contur/fs/i_filesystem.h`
-+ `src/include/contur/fs/simple_fs.h`
-+ `src/contur/fs/simple_fs.cpp`
-+ `src/include/contur/kernel/i_kernel.h`
-+ `src/include/contur/kernel/kernel.h`
-+ `src/contur/kernel/kernel.cpp`
-+ `src/include/contur/kernel/kernel_builder.h`
-+ `src/contur/kernel/kernel_builder.cpp`

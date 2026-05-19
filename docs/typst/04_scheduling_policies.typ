@@ -175,26 +175,10 @@ class Statistics {
 Формула @eq:ewma не требует хранения истории и достаточно точна для образовательной
 демонстрации SPN/SRT.
 
-= Заключение
+= Заключение <s>
 
 Планирование в Contur 2 устроено по паттерну Strategy: любой из семи алгоритмов выбирается
 во время сборки ядра и не требует изменений в остальном коде. Lane-ы и work-stealing уже
 заложены в контракт `IScheduler`, что обеспечивает однородное поведение в режимах `N = 1` и
 `N > 1`. Прогноз CPU-burst через EWMA обеспечивает работу SPN- и SRT-стратегий без хранения
 истории и подготавливает почву для адаптивной диспетчеризации.
-
-= Список использованных источников
-
-+ `src/include/contur/scheduling/i_scheduling_policy.h`
-+ `src/include/contur/scheduling/i_scheduler.h`
-+ `src/include/contur/scheduling/scheduler.h`
-+ `src/contur/scheduling/scheduler.cpp`
-+ `src/include/contur/scheduling/fcfs_policy.h`
-+ `src/include/contur/scheduling/round_robin_policy.h`
-+ `src/include/contur/scheduling/spn_policy.h`
-+ `src/include/contur/scheduling/srt_policy.h`
-+ `src/include/contur/scheduling/hrrn_policy.h`
-+ `src/include/contur/scheduling/priority_policy.h`
-+ `src/include/contur/scheduling/mlfq_policy.h`
-+ `src/include/contur/scheduling/statistics.h`
-+ `src/contur/scheduling/statistics.cpp`
