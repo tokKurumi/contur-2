@@ -21,6 +21,8 @@ namespace contur {
     class IDispatchRuntime;
     class ITracer;
     class IFileSystem;
+    class DeviceManager;
+    class IIoManager;
     class IpcManager;
     class SyscallTable;
     struct KernelDependencies;
@@ -101,6 +103,16 @@ namespace contur {
         /// @param fileSystem Filesystem implementation owned by the builder.
         /// @return Reference to this builder.
         [[nodiscard]] KernelBuilder &withFileSystem(std::unique_ptr<IFileSystem> fileSystem);
+
+        /// @brief Injects device manager dependency.
+        /// @param deviceManager Device registry implementation owned by the builder.
+        /// @return Reference to this builder.
+        [[nodiscard]] KernelBuilder &withDeviceManager(std::unique_ptr<DeviceManager> deviceManager);
+
+        /// @brief Injects unified I/O manager dependency.
+        /// @param ioManager I/O manager implementation owned by the builder.
+        /// @return Reference to this builder.
+        [[nodiscard]] KernelBuilder &withIoManager(std::unique_ptr<IIoManager> ioManager);
 
         /// @brief Injects IPC manager dependency.
         /// @param ipcManager IPC manager implementation owned by the builder.

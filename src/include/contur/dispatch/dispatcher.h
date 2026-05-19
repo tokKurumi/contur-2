@@ -14,6 +14,7 @@ namespace contur {
     class IScheduler;
     class ITracer;
     class IVirtualMemory;
+    class SyscallTable;
 
     /// @brief Uniprocessor dispatcher implementation.
     ///
@@ -28,7 +29,8 @@ namespace contur {
             IExecutionEngine &engine,
             IVirtualMemory &virtualMemory,
             IClock &clock,
-            ITracer &tracer
+            ITracer &tracer,
+            SyscallTable &syscallTable
         );
 
         /// @brief Destroys dispatcher.

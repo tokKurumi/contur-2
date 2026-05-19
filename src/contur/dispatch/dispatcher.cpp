@@ -4,6 +4,7 @@
 #include "contur/dispatch/dispatcher.h"
 
 #include <algorithm>
+#include <array>
 #include <string>
 #include <unordered_map>
 
@@ -14,6 +15,9 @@
 #include "contur/memory/i_virtual_memory.h"
 #include "contur/process/process_image.h"
 #include "contur/scheduling/i_scheduler.h"
+#include "contur/syscall/syscall_conventions.h"
+#include "contur/syscall/syscall_ids.h"
+#include "contur/syscall/syscall_table.h"
 #include "contur/tracing/i_tracer.h"
 #include "contur/tracing/trace_scope.h"
 
@@ -26,6 +30,7 @@ namespace contur {
         IVirtualMemory &virtualMemory;
         IClock &clock;
         ITracer &tracer;
+        SyscallTable &syscallTable;
         std::unordered_map<ProcessId, std::unique_ptr<ProcessImage>> processes;
 
         Impl(
@@ -33,13 +38,15 @@ namespace contur {
             IExecutionEngine &engine,
             IVirtualMemory &virtualMemory,
             IClock &clock,
-            ITracer &tracer
+            ITracer &tracer,
+            SyscallTable &syscallTable
         )
             : scheduler(scheduler)
             , engine(engine)
             , virtualMemory(virtualMemory)
             , clock(clock)
             , tracer(tracer)
+            , syscallTable(syscallTable)
         {}
 
         void advanceClock(std::size_t ticks)
@@ -49,12 +56,46 @@ namespace contur {
                 clock.tick();
             }
         }
+
+        Result<void> handleSystemCall(ProcessImage &process)
+        {
+            RegisterFile &regs = process.registers();
+            auto syscallId = static_cast<SyscallId>(regs.get(SYSCALL_ID_REGISTER));
+
+            std::array<RegisterValue, SYSCALL_ARG_REGISTERS.size()> args{};
+            for (std::size_t i = 0; i < args.size(); ++i)
+            {
+                args[i] = regs.get(SYSCALL_ARG_REGISTERS[i]);
+            }
+
+            auto result = syscallTable.dispatch(syscallId, args, process);
+            if (result.isOk())
+            {
+                regs.set(SYSCALL_ID_REGISTER, result.value());
+                regs.set(SYSCALL_STATUS_REGISTER, 0);
+                return Result<void>::ok();
+            }
+
+            regs.set(SYSCALL_ID_REGISTER, -1);
+            regs.set(SYSCALL_STATUS_REGISTER, static_cast<RegisterValue>(result.errorCode()));
+
+            if (result.errorCode() == ErrorCode::ResourceBusy)
+            {
+                return scheduler.blockProcess(process.id(), clock.now());
+            }
+            return Result<void>::ok();
+        }
     };
 
     Dispatcher::Dispatcher(
-        IScheduler &scheduler, IExecutionEngine &engine, IVirtualMemory &virtualMemory, IClock &clock, ITracer &tracer
+        IScheduler &scheduler,
+        IExecutionEngine &engine,
+        IVirtualMemory &virtualMemory,
+        IClock &clock,
+        ITracer &tracer,
+        SyscallTable &syscallTable
     )
-        : impl_(std::make_unique<Impl>(scheduler, engine, virtualMemory, clock, tracer))
+        : impl_(std::make_unique<Impl>(scheduler, engine, virtualMemory, clock, tracer, syscallTable))
     {}
 
     Dispatcher::~Dispatcher() = default;
@@ -202,6 +243,10 @@ namespace contur {
 
         case StopReason::Interrupted:
             CONTUR_TRACE(impl_->tracer, "Dispatcher", "dispatch.stop", "interrupted");
+            if (result.interrupt == Interrupt::SystemCall)
+            {
+                return impl_->handleSystemCall(*processIt->second);
+            }
             return impl_->scheduler.blockProcess(pid, impl_->clock.now());
 
         case StopReason::ProcessExited:

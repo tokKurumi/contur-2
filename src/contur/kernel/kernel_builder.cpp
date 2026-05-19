@@ -12,6 +12,8 @@
 #include "contur/dispatch/i_dispatcher.h"
 #include "contur/execution/i_execution_engine.h"
 #include "contur/fs/i_filesystem.h"
+#include "contur/io/device_manager.h"
+#include "contur/io/i_io_manager.h"
 #include "contur/ipc/ipc_manager.h"
 #include "contur/kernel/kernel.h"
 #include "contur/memory/i_memory.h"
@@ -28,8 +30,8 @@ namespace contur {
         [[nodiscard]] bool hasAllRequiredDependencies(const KernelDependencies &deps)
         {
             return deps.clock && deps.memory && deps.mmu && deps.virtualMemory && deps.cpu && deps.executionEngine &&
-                   deps.scheduler && deps.dispatcher && deps.tracer && deps.fileSystem && deps.ipcManager &&
-                   deps.syscallTable;
+                   deps.scheduler && deps.dispatcher && deps.tracer && deps.fileSystem && deps.deviceManager &&
+                   deps.ioManager && deps.ipcManager && deps.syscallTable;
         }
 
     } // namespace
@@ -112,6 +114,18 @@ namespace contur {
     KernelBuilder &KernelBuilder::withFileSystem(std::unique_ptr<IFileSystem> fileSystem)
     {
         impl_->deps.fileSystem = std::move(fileSystem);
+        return *this;
+    }
+
+    KernelBuilder &KernelBuilder::withDeviceManager(std::unique_ptr<DeviceManager> deviceManager)
+    {
+        impl_->deps.deviceManager = std::move(deviceManager);
+        return *this;
+    }
+
+    KernelBuilder &KernelBuilder::withIoManager(std::unique_ptr<IIoManager> ioManager)
+    {
+        impl_->deps.ioManager = std::move(ioManager);
         return *this;
     }
 

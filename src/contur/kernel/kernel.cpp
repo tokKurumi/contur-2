@@ -17,6 +17,9 @@
 #include "contur/dispatch/i_dispatcher.h"
 #include "contur/execution/i_execution_engine.h"
 #include "contur/fs/i_filesystem.h"
+#include "contur/io/device_manager.h"
+#include "contur/io/i_io_manager.h"
+#include "contur/io/io_types.h"
 #include "contur/ipc/ipc_manager.h"
 #include "contur/memory/i_memory.h"
 #include "contur/memory/i_mmu.h"
@@ -24,6 +27,7 @@
 #include "contur/process/process_image.h"
 #include "contur/scheduling/i_scheduler.h"
 #include "contur/sync/i_sync_primitive.h"
+#include "contur/syscall/syscall_conventions.h"
 #include "contur/syscall/syscall_table.h"
 #include "contur/tracing/i_tracer.h"
 #include "contur/tracing/trace_scope.h"
@@ -43,6 +47,8 @@ namespace contur {
         std::unique_ptr<ITracer> tracer;
         std::unique_ptr<IDispatchRuntime> runtime;
         std::unique_ptr<IFileSystem> fileSystem;
+        std::unique_ptr<DeviceManager> deviceManager;
+        std::unique_ptr<IIoManager> ioManager;
         std::unique_ptr<IpcManager> ipcManager;
         std::unique_ptr<SyscallTable> syscallTable;
         std::unordered_map<std::string, std::unique_ptr<ISyncPrimitive>> syncPrimitives;
@@ -62,10 +68,99 @@ namespace contur {
             , tracer(std::move(deps.tracer))
             , runtime(std::move(deps.runtime))
             , fileSystem(std::move(deps.fileSystem))
+            , deviceManager(std::move(deps.deviceManager))
+            , ioManager(std::move(deps.ioManager))
             , ipcManager(std::move(deps.ipcManager))
             , syscallTable(std::move(deps.syscallTable))
             , defaultTickBudget(deps.defaultTickBudget)
-        {}
+        {
+            if (ioManager && scheduler && clock)
+            {
+                ioManager->setWakeCallback([this](ProcessId pid) { (void)scheduler->unblock(pid, clock->now()); });
+            }
+
+            registerDefaultSyscalls();
+        }
+
+        void registerDefaultSyscalls()
+        {
+            if (!syscallTable || !ioManager || !clock)
+            {
+                return;
+            }
+
+            (void)syscallTable->registerHandler(SyscallId::GetPid, [](std::span<const RegisterValue>, ProcessImage &p) {
+                return Result<RegisterValue>::ok(static_cast<RegisterValue>(p.id()));
+            });
+
+            (void)syscallTable->registerHandler(
+                SyscallId::GetTime, [this](std::span<const RegisterValue>, ProcessImage &) {
+                    return Result<RegisterValue>::ok(static_cast<RegisterValue>(clock->now()));
+                }
+            );
+
+            (void)syscallTable->registerHandler(
+                SyscallId::Open, [this](std::span<const RegisterValue> args, ProcessImage &) -> Result<RegisterValue> {
+                    if (args.size() < 3)
+                    {
+                        return Result<RegisterValue>::error(ErrorCode::InvalidArgument);
+                    }
+                    RegisterValue resourceId = args[0];
+                    IoResourceKind kind = static_cast<IoResourceKind>(args[1]);
+                    OpenMode mode = static_cast<OpenMode>(args[2]);
+                    auto opened = ioManager->open(resourceId, kind, mode);
+                    if (opened.isError())
+                    {
+                        return Result<RegisterValue>::error(opened.errorCode());
+                    }
+                    return Result<RegisterValue>::ok(opened.value().value);
+                }
+            );
+
+            (void)syscallTable->registerHandler(
+                SyscallId::Close, [this](std::span<const RegisterValue> args, ProcessImage &) -> Result<RegisterValue> {
+                    if (args.empty())
+                    {
+                        return Result<RegisterValue>::error(ErrorCode::InvalidArgument);
+                    }
+                    IoDescriptor fd{static_cast<std::int32_t>(args[0])};
+                    auto closed = ioManager->close(fd);
+                    if (closed.isError())
+                    {
+                        return Result<RegisterValue>::error(closed.errorCode());
+                    }
+                    return Result<RegisterValue>::ok(0);
+                }
+            );
+
+            (void)syscallTable->registerHandler(
+                SyscallId::Read,
+                [this](std::span<const RegisterValue> args, ProcessImage &caller) -> Result<RegisterValue> {
+                    if (args.empty())
+                    {
+                        return Result<RegisterValue>::error(ErrorCode::InvalidArgument);
+                    }
+                    IoDescriptor fd{static_cast<std::int32_t>(args[0])};
+                    return ioManager->read(fd, caller.id());
+                }
+            );
+
+            (void)syscallTable->registerHandler(
+                SyscallId::Write, [this](std::span<const RegisterValue> args, ProcessImage &) -> Result<RegisterValue> {
+                    if (args.size() < 2)
+                    {
+                        return Result<RegisterValue>::error(ErrorCode::InvalidArgument);
+                    }
+                    IoDescriptor fd{static_cast<std::int32_t>(args[0])};
+                    auto written = ioManager->write(fd, args[1]);
+                    if (written.isError())
+                    {
+                        return Result<RegisterValue>::error(written.errorCode());
+                    }
+                    return Result<RegisterValue>::ok(1);
+                }
+            );
+        }
 
         [[nodiscard]] bool processExists(ProcessId pid) const noexcept
         {

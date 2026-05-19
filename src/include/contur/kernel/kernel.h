@@ -24,6 +24,8 @@ namespace contur {
     class ISchedulingPolicy;
     class SyscallTable;
     class IpcManager;
+    class DeviceManager;
+    class IIoManager;
 
     /// @brief Dependency bundle used to construct a Kernel.
     struct KernelDependencies
@@ -57,6 +59,12 @@ namespace contur {
 
         /// @brief File system service.
         std::unique_ptr<IFileSystem> fileSystem;
+
+        /// @brief Device registry service.
+        std::unique_ptr<DeviceManager> deviceManager;
+
+        /// @brief Unified I/O manager service.
+        std::unique_ptr<IIoManager> ioManager;
 
         /// @brief IPC manager service.
         std::unique_ptr<IpcManager> ipcManager;
