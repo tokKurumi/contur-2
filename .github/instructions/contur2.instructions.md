@@ -66,7 +66,8 @@ contur/
     │       │   ├── interrupt.h             # Interrupt enum class
     │       │   ├── register_file.h         # RegisterFile (16 registers)
     │       │   ├── block.h                 # Block — single memory cell
-    │       │   └── isa.h                   # ISA constants & helpers (header-only)
+    │       │   ├── isa.h                   # ISA constants & helpers (header-only)
+    │       │   └── program_builder.h       # Inline Block construction helpers (header-only)
     │       ├── memory/                     # Memory subsystem
     │       │   ├── i_memory.h              # IMemory interface
     │       │   ├── physical_memory.h       # PhysicalMemory (RAM simulation)
@@ -125,19 +126,25 @@ contur/
     │       ├── syscall/                    # System calls interface
     │       │   ├── syscall_table.h         # Syscall dispatch table
     │       │   ├── syscall_handler.h       # ISyscallHandler interface
-    │       │   └── syscall_ids.h           # Syscall number enum class
+    │       │   ├── syscall_ids.h           # Syscall number enum class
+    │       │   ├── syscall_conventions.h   # Register ABI constants (id, args, status registers)
+    │       │   └── program_syscalls.h      # Inline syscall sequence emitters (header-only)
     │       ├── fs/                         # File system simulation
     │       │   ├── i_filesystem.h          # IFileSystem interface
     │       │   ├── simple_fs.h             # SimpleFS — inode-based implementation
     │       │   ├── inode.h                 # Inode structure
     │       │   ├── directory_entry.h       # Directory entry
-    │       │   ├── file_descriptor.h       # File descriptor table
-    │       │   └── block_allocator.h       # Disk block allocation (bitmap)
+    │       │   ├── file_descriptor.h       # File descriptor table + OpenMode
+    │       │   ├── block_allocator.h       # Disk block allocation (bitmap)
+    │       │   └── fs_utils.h              # Inline helpers: readFileValue / writeFileValue / parseRegisterValue
     │       ├── io/                         # I/O subsystem
     │       │   ├── i_device.h              # IDevice interface
     │       │   ├── console_device.h        # Console output device
     │       │   ├── network_device.h        # Network (LAN) simulation
-    │       │   └── device_manager.h        # Device registry & dispatch
+    │       │   ├── device_manager.h        # Device registry & dispatch
+    │       │   ├── io_types.h              # IoDescriptor, IoResourceKind
+    │       │   ├── i_io_manager.h          # IIoManager interface + IoWakeCallback
+    │       │   └── io_manager.h            # IoManager — unified file/socket I/O implementation
     │       ├── tui/                        # Terminal UI / Visualization (external module)
     │       │   ├── tui_models.h            # Immutable Tui* DTO contracts
     │       │   ├── tui_commands.h          # TuiCommand / TuiCommandKind / TuiPlaybackConfig
@@ -640,7 +647,7 @@ What the shell provides:
 - the tracer's `BufferSink` feeds the log pane of `FtxuiApp` directly, so structured
     tracing and stepping converge into one screen.
 
-See [Section 14](#14-terminal-ui--visualization) for the MVC contracts and FTXUI backend.
+See [Section 15](#15-terminal-ui--visualization) for the MVC contracts and FTXUI backend.
 
 ### 9. Real Host Multithreading (N >= 1 Configurable Threads)
 
@@ -1032,7 +1039,61 @@ public:
 
 `IpcManager` is the registry — creates, looks up, and destroys channels by name. Processes access IPC only through syscalls (never direct references to channels).
 
-### 10. System Calls API
+### 10. I/O Manager
+
+`IIoManager` / `IoManager` provide a unified I/O layer over filesystem paths and
+in-memory socket queues.  The dispatcher and kernel wire `IoManager` to `IFileSystem`
+and `DeviceManager`; process programs interact with it through the Open/Read/Write/Close
+syscalls.
+
+#### Resource kinds
+
+| Kind | Backing store | Notes |
+|---|---|---|
+| `IoResourceKind::File` | `IFileSystem` path | Plain read/write; never blocks |
+| `IoResourceKind::LanFile` | `IFileSystem` + `NetworkDevice` | Also touches the network device for tracing |
+| `IoResourceKind::SocketStream` | In-memory `deque<RegisterValue>` | Bounded capacity; read on empty socket blocks |
+| `IoResourceKind::SocketMessage` | In-memory `deque<RegisterValue>` | Same blocking semantics as SocketStream |
+
+#### Blocking I/O model
+
+When a process reads from an empty socket the manager does not return a value.
+Instead it returns `ErrorCode::ResourceBusy`, which the dispatcher interprets as a
+signal to move the process to the blocked queue.  When a writer puts data into the
+socket, the manager invokes the wake callback to unblock the waiting process:
+
+```
+Process → emitRead → Interrupt::SystemCall
+    → Dispatcher::handleSystemCall
+        → IoManager::read(fd, pid)
+            → empty socket → ResourceBusy
+        → scheduler.blockProcess(pid)
+
+Writer puts data → IoManager::write(fd, value)
+    → socket has waiters → wakeCallback(waiterPid)
+        → scheduler.unblock(waiterPid)
+```
+
+Wire the callback in the kernel constructor:
+
+```cpp
+ioManager->setWakeCallback([&scheduler](ProcessId pid) {
+    (void)scheduler.unblock(pid);
+});
+```
+
+#### Registration
+
+Before the kernel is built, callers must register every resource by numeric id:
+
+```cpp
+ioManager->registerFile(1, "/lan/f1.txt", IoResourceKind::LanFile);
+ioManager->registerSocket(10, /*capacity=*/64, IoResourceKind::SocketStream);
+```
+
+The same numeric id is what process programs pass to the Open syscall.
+
+### 11. System Calls API
 
 A formalized user-kernel boundary:
 
@@ -1073,7 +1134,7 @@ public:
 
 `SyscallTable` maps `SyscallId` → handler function (std::function or interface pointer). The CPU's `Interrupt::SystemCall` triggers dispatch through the table. This cleanly separates user-mode instruction execution from kernel-mode services.
 
-### 11. Deadlock Detection & Prevention
+### 12. Deadlock Detection & Prevention
 
 Integrated into `sync/`:
 
@@ -1099,7 +1160,7 @@ public:
 
 The detector maintains a **wait-for graph** (adjacency list). On each `onWait()`, it runs cycle detection (DFS). Optionally, the kernel can run **banker's algorithm** before granting resource requests to prevent deadlocks proactively.
 
-### 12. Page Replacement Algorithms
+### 13. Page Replacement Algorithms
 
 Extends `memory/` with pluggable page replacement:
 
@@ -1121,7 +1182,7 @@ public:
 | **Clock** | `ClockReplacement` | Circular scan with reference bit; second-chance |
 | **Optimal** | `OptimalReplacement` | Evicts page not used for longest future time (requires known access sequence; educational only) |
 
-### 13. File System Simulation
+### 14. File System Simulation
 
 A minimal inode-based file system for educational purposes:
 
@@ -1148,7 +1209,7 @@ Internals of `SimpleFS`:
 
 The FS operates on a simulated disk (a `std::vector<std::array<std::byte, BLOCK_SIZE>>`).
 
-### 14. Terminal UI / Visualization
+### 15. Terminal UI / Visualization
 
 Terminal UI is an **external module** layered on top of the kernel API and lives
 in a **separate CMake target** (`contur2_tui`).
