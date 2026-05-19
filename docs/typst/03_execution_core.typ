@@ -1,4 +1,4 @@
-#import "@preview/smk-sto-004:0.1.0": *
+#import "@preview/smk-sto:0.3.1": *
 #import "@preview/fletcher:0.5.8" as fletcher: diagram, edge, node
 #import "_meta.typ": *
 

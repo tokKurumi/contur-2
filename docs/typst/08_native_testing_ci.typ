@@ -1,4 +1,4 @@
-#import "@preview/smk-sto-004:0.1.0": *
+#import "@preview/smk-sto:0.3.1": *
 #import "@preview/fletcher:0.5.8" as fletcher: diagram, edge, node
 #import "_meta.typ": *
 
@@ -66,17 +66,13 @@ host-процесса по двум платформам приведено в �
       [`ResumeThread` → `WaitForSingleObject(sliceMs)` → `SuspendThread`],
       [`kill(SIGCONT)` → `nanosleep(sliceMs)` → `kill(SIGSTOP)`],
 
-      [`halt(pid)`],
-      [`TerminateProcess` + `CloseHandle`],
-      [`kill(SIGKILL)` + блокирующий `waitpid`],
+      [`halt(pid)`], [`TerminateProcess` + `CloseHandle`], [`kill(SIGKILL)` + блокирующий `waitpid`],
 
       [Естественный выход],
       [`WAIT_OBJECT_0` + `GetExitCodeProcess` → `R0`],
       [`waitpid(WNOHANG)` + `WIFEXITED` / `WIFSIGNALED` → `R0`],
 
-      [stdout доступен],
-      [`PeekNamedPipe` + `ReadFile`],
-      [non-blocking `read()` через `O_NONBLOCK`],
+      [stdout доступен], [`PeekNamedPipe` + `ReadFile`], [non-blocking `read()` через `O_NONBLOCK`],
     ),
   ),
   caption: [Жизненный цикл host-процесса под управлением `NativeEngine`],

@@ -5,11 +5,11 @@
 
 ## Шаблон
 
-Используется [`smk-sto-004`](https://github.com/tokKurumi/smk-sto) — реализация
+Используется пакет [`smk-sto`](https://github.com/tokKurumi/smk-sto) — реализация
 СМК СТО 004–2020 МГУ им. Н. П. Огарёва (правила оформления отчётов о лабораторных работах):
 A4, поля 30/15/20/20 мм, Times New Roman 14 pt, межстрочный интервал 1.5, нумерация
 заголовков и подписей рисунков/таблиц соответствует стандарту. Подключается через
-`@preview/smk-sto-004:0.1.0`.
+`@preview/smk-sto:0.3.1`.
 
 Диаграммы — [`fletcher`](https://typst.app/universe/package/fletcher) (`0.5.8`):
 fletcher автоматически подтянет cetz при компиляции.
@@ -59,7 +59,7 @@ typst compile 01_architecture_foundation.typ
 for f in 0*.typ; do typst compile "$f"; done
 ```
 
-При первом запуске Typst скачает `smk-sto-004` (находится в активной разработке, см [репозиторий](https://github.com/tokKurumi/smk-sto)), `fletcher` и их зависимости из реестра
+При первом запуске Typst скачает `smk-sto` (находится в активной разработке, см [репозиторий](https://github.com/tokKurumi/smk-sto)), `fletcher` и их зависимости из реестра
 `@preview`. Дальнейшие сборки идут из локального кэша.
 
 ## Структура каждого отчёта
