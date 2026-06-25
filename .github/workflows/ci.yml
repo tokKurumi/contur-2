@@ -55,7 +55,7 @@ jobs:
             conan_build_type: Release
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Cache pip downloads
         uses: actions/cache@v5
