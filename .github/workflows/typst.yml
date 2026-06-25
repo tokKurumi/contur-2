@@ -99,7 +99,7 @@ jobs:
           ls -la "$dest"
 
       - name: Cache Typst packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/typst
           key: ${{ runner.os }}-typst-pkgs-${{ hashFiles('docs/typst/*.typ') }}
